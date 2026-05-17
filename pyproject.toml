@@ -1,0 +1,19 @@
+[project]
+name = "hermes-polymarket-control"
+version = "0.23.0"
+description = "Hermes control-plane client for a standalone Polymarket execution engine"
+requires-python = ">=3.13"
+dependencies = [
+  "httpx>=0.28.1",
+  "pydantic>=2.13.3",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=9.0.2"]
+
+[build-system]
+requires = ["setuptools>=82.0.1", "wheel>=0.46.3"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
