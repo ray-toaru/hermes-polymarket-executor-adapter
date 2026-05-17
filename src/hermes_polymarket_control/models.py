@@ -170,6 +170,88 @@ class CancelReceipt(FrozenModel):
     ]
 
 
+OrderLifecycleState = Literal[
+    "PLANNED",
+    "SIGNED",
+    "POST_REQUESTED",
+    "POSTED",
+    "PARTIALLY_FILLED",
+    "FILLED",
+    "CANCEL_REQUESTED",
+    "CANCEL_REMOTE_ACCEPTED",
+    "CANCEL_CONFIRMED",
+    "REMOTE_UNKNOWN",
+    "PARTIAL_REMOTE_UNKNOWN",
+    "FAILED",
+]
+
+OrderEventKind = Literal[
+    "SIGNED",
+    "POST_REQUESTED",
+    "REMOTE_POSTED",
+    "REMOTE_REJECTED",
+    "REMOTE_UNKNOWN",
+    "PARTIAL_FILL",
+    "FULL_FILL",
+    "CANCEL_REQUESTED",
+    "CANCEL_REMOTE_ACCEPTED",
+    "CANCEL_CONFIRMED",
+    "RECONCILE_OPEN",
+    "RECONCILE_MISSING",
+]
+
+RemoteOrderObservation = Literal["OPEN", "MISSING", "UNKNOWN"]
+
+OrderLifecycleDivergenceKind = Literal[
+    "NONE",
+    "LOCAL_REMOTE_UNKNOWN_REMOTE_OPEN",
+    "LOCAL_REMOTE_UNKNOWN_REMOTE_MISSING",
+    "LOCAL_REMOTE_UNKNOWN_STILL_UNKNOWN",
+    "TERMINAL_LOCAL_REMOTE_MISMATCH",
+]
+
+
+class OrderLifecycleRecord(FrozenModel):
+    order_id: str
+    execution_id: str
+    account_id: str
+    condition_id: str
+    token_id: str
+    side: str
+    lifecycle_state: OrderLifecycleState
+    remote_order_id: str | None
+    remote_state: str | None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+class OrderLifecycleDivergence(FrozenModel):
+    kind: OrderLifecycleDivergenceKind
+    event: OrderEventKind | None
+    operator_required: bool
+    no_remote_side_effect: bool
+    reason: str
+
+    @model_validator(mode="after")
+    def must_not_have_remote_side_effect(self) -> "OrderLifecycleDivergence":
+        if not self.no_remote_side_effect:
+            raise ValueError("order lifecycle divergence must not contain remote side effects")
+        return self
+
+
+class ReconcileOrderLocalResponse(FrozenModel):
+    order_id: str
+    divergence: OrderLifecycleDivergence
+    updated_order: OrderLifecycleRecord | None
+    no_remote_side_effect: bool
+
+    @model_validator(mode="after")
+    def must_be_local_only(self) -> "ReconcileOrderLocalResponse":
+        if not self.no_remote_side_effect:
+            raise ValueError("local order reconcile response must not contain remote side effects")
+        return self
+
+
 SignOnlyLifecycleState = Literal[
     "PLANNED",
     "RESERVATION_PREPARED",

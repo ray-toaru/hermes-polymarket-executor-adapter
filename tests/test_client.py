@@ -89,6 +89,19 @@ def test_admin_methods_use_admin_token(monkeypatch):
 
     def fake_post(self, url, json, headers):
         captured.append((url, json, headers))
+        if url.endswith("/reconcile-order-local"):
+            return httpx.Response(202, request=httpx.Request("POST", url), json={
+                "order_id": "o1",
+                "divergence": {
+                    "kind": "LOCAL_REMOTE_UNKNOWN_REMOTE_MISSING",
+                    "event": "RECONCILE_MISSING",
+                    "operator_required": False,
+                    "no_remote_side_effect": True,
+                    "reason": "first missing observation",
+                },
+                "updated_order": None,
+                "no_remote_side_effect": True,
+            })
         if url.endswith("/kill-switch"):
             return httpx.Response(202, request=httpx.Request("POST", url), json={
                 "enabled": True,
@@ -112,6 +125,7 @@ def test_admin_methods_use_admin_token(monkeypatch):
     client = ExecutorClient(ExecutorConfig(base_url="http://executor", service_token="svc", admin_token="admin"))
     client.set_kill_switch(True, "test")
     client.reconcile("acct", "test")
+    client.reconcile_order_local("acct", "o1", "MISSING", "first missing observation")
     client.cancel_order("acct", "o1", "test")
     assert all(h["Authorization"] == "Bearer admin" for _, _, h in captured)
     client.close()

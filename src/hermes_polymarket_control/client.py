@@ -16,7 +16,9 @@ from .models import (
     HealthReport,
     KillSwitchReceipt,
     NormalizedIntent,
+    ReconcileOrderLocalResponse,
     ReconcileReport,
+    RemoteOrderObservation,
     SignOnlyLifecycleRecord,
     SubmitReceipt,
     TradeIntent,
@@ -262,6 +264,29 @@ class ExecutorClient:
             self._post(
                 "/v1/admin/reconcile",
                 {"account_id": account_id, "execution_id": execution_id, "reason": reason},
+                admin=True,
+                correlation_id=correlation_id,
+            )
+        )
+
+    def reconcile_order_local(
+        self,
+        account_id: str,
+        order_id: str,
+        remote_observation: RemoteOrderObservation,
+        reason: str,
+        *,
+        correlation_id: str | None = None,
+    ) -> ReconcileOrderLocalResponse:
+        return ReconcileOrderLocalResponse.model_validate(
+            self._post(
+                "/v1/admin/reconcile-order-local",
+                {
+                    "account_id": account_id,
+                    "order_id": order_id,
+                    "remote_observation": remote_observation,
+                    "reason": reason,
+                },
                 admin=True,
                 correlation_id=correlation_id,
             )

@@ -6,8 +6,10 @@ from pydantic import ValidationError
 from hermes_polymarket_control.models import (
     ExecutionLifecycleEvent,
     MarketRef,
+    OrderLifecycleDivergence,
     QuantityIntent,
     RedactedPayloadEnvelope,
+    ReconcileOrderLocalResponse,
     Side,
     TimeInForce,
     TradeIntent,
@@ -116,4 +118,30 @@ def test_execution_lifecycle_payload_requires_redacted_envelope():
             correlation_id=None,
             redacted_fields=[],
             body={},
+        )
+
+
+def test_reconcile_order_local_response_validates_local_only_boundary():
+    divergence = OrderLifecycleDivergence(
+        kind="LOCAL_REMOTE_UNKNOWN_REMOTE_MISSING",
+        event="RECONCILE_MISSING",
+        operator_required=False,
+        no_remote_side_effect=True,
+        reason="first missing observation",
+    )
+    response = ReconcileOrderLocalResponse(
+        order_id="order-1",
+        divergence=divergence,
+        updated_order=None,
+        no_remote_side_effect=True,
+    )
+    assert response.divergence.event == "RECONCILE_MISSING"
+
+    with pytest.raises(ValidationError):
+        OrderLifecycleDivergence(
+            kind="LOCAL_REMOTE_UNKNOWN_REMOTE_MISSING",
+            event="RECONCILE_MISSING",
+            operator_required=False,
+            no_remote_side_effect=False,
+            reason="bad",
         )
