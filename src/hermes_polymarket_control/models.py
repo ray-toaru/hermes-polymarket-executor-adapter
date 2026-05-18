@@ -300,6 +300,51 @@ class SignOnlyLifecycleRecord(FrozenModel):
         return self
 
 
+class StandardSignOnlyConstructionRequest(FrozenModel):
+    execution_id: str
+    account_id: str
+    plan_hash: str
+    signed_order_ref: str
+    signed_order_digest: str | None = None
+    no_remote_side_effect: bool
+
+    @field_validator("signed_order_ref")
+    @classmethod
+    def signed_order_ref_must_be_redacted(cls, value: str) -> str:
+        if not value.startswith("sign-only:"):
+            raise ValueError("standard sign-only construction requires a redacted sign-only ref")
+        return value
+
+    @field_validator("signed_order_digest")
+    @classmethod
+    def digest_must_be_sha256(cls, value: str | None) -> str | None:
+        if value is not None and not re.fullmatch(r"[0-9A-Fa-f]{64}", value):
+            raise ValueError("signed_order_digest must be a 64-character hex SHA-256 digest")
+        return value
+
+    @model_validator(mode="after")
+    def must_be_local_only(self) -> "StandardSignOnlyConstructionRequest":
+        if not self.no_remote_side_effect:
+            raise ValueError("standard sign-only construction must not contain remote side effects")
+        return self
+
+
+class StandardSignOnlyConstructionReceipt(FrozenModel):
+    execution_id: str
+    signed_order_ref: str
+    signed_order_digest: str | None = None
+    lifecycle_records: list[SignOnlyLifecycleRecord]
+    no_remote_side_effect: bool
+
+    @model_validator(mode="after")
+    def must_be_redacted_and_local_only(self) -> "StandardSignOnlyConstructionReceipt":
+        if not self.no_remote_side_effect:
+            raise ValueError("standard sign-only receipt must not contain remote side effects")
+        if not self.signed_order_ref.startswith("sign-only:"):
+            raise ValueError("standard sign-only receipt requires a redacted sign-only ref")
+        return self
+
+
 class RedactedPayloadEnvelope(FrozenModel):
     schema_version: int
     kind: str

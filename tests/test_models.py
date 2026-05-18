@@ -11,6 +11,9 @@ from hermes_polymarket_control.models import (
     RedactedPayloadEnvelope,
     ReconcileOrderLocalResponse,
     Side,
+    SignOnlyLifecycleRecord,
+    StandardSignOnlyConstructionReceipt,
+    StandardSignOnlyConstructionRequest,
     TimeInForce,
     TradeIntent,
 )
@@ -60,8 +63,6 @@ def test_trade_intent_rejects_extra_fields():
 
 
 def test_sign_only_lifecycle_record_validates_boundary():
-    from hermes_polymarket_control.models import SignOnlyLifecycleRecord
-
     ok = SignOnlyLifecycleRecord(
         execution_id="exec-1",
         account_id="acct",
@@ -91,6 +92,56 @@ def test_sign_only_lifecycle_record_validates_boundary():
             state="RESERVATION_PREPARED",
             event="PREPARE_RESERVATION",
             signed_order_ref="forbidden-ref",
+            no_remote_side_effect=True,
+        )
+
+
+def test_standard_sign_only_construction_models_validate_redaction_boundary():
+    digest = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    request = StandardSignOnlyConstructionRequest(
+        execution_id="exec-1",
+        account_id="acct",
+        plan_hash="hash-1",
+        signed_order_ref="sign-only:exec-1:hash-1:digest",
+        signed_order_digest=digest,
+        no_remote_side_effect=True,
+    )
+    assert request.signed_order_digest == digest
+
+    receipt = StandardSignOnlyConstructionReceipt(
+        execution_id="exec-1",
+        signed_order_ref="sign-only:exec-1:hash-1:digest",
+        signed_order_digest=digest,
+        lifecycle_records=[
+            SignOnlyLifecycleRecord(
+                execution_id="exec-1",
+                account_id="acct",
+                state="SIGNED_DRY_RUN",
+                event="SIGNED_WITHOUT_POST",
+                signed_order_ref="sign-only:exec-1:hash-1:digest",
+                no_remote_side_effect=True,
+            )
+        ],
+        no_remote_side_effect=True,
+    )
+    assert receipt.signed_order_ref.startswith("sign-only:")
+
+    with pytest.raises(ValueError):
+        StandardSignOnlyConstructionRequest(
+            execution_id="exec-1",
+            account_id="acct",
+            plan_hash="hash-1",
+            signed_order_ref="raw-signed-order",
+            signed_order_digest=digest,
+            no_remote_side_effect=True,
+        )
+    with pytest.raises(ValueError):
+        StandardSignOnlyConstructionRequest(
+            execution_id="exec-1",
+            account_id="acct",
+            plan_hash="hash-1",
+            signed_order_ref="sign-only:exec-1",
+            signed_order_digest="not-a-digest",
             no_remote_side_effect=True,
         )
 

@@ -20,6 +20,8 @@ from .models import (
     ReconcileReport,
     RemoteOrderObservation,
     SignOnlyLifecycleRecord,
+    StandardSignOnlyConstructionReceipt,
+    StandardSignOnlyConstructionRequest,
     SubmitReceipt,
     TradeIntent,
 )
@@ -169,6 +171,20 @@ class ExecutorClient:
             self._post(
                 "/v1/sign-only/lifecycle-events",
                 record.model_dump(mode="json"),
+                correlation_id=correlation_id,
+            )
+        )
+
+    def record_standard_sign_only_construction(
+        self,
+        request: StandardSignOnlyConstructionRequest,
+        *,
+        correlation_id: str | None = None,
+    ) -> StandardSignOnlyConstructionReceipt:
+        return StandardSignOnlyConstructionReceipt.model_validate(
+            self._post(
+                "/v1/sign-only/standard-constructions",
+                request.model_dump(mode="json"),
                 correlation_id=correlation_id,
             )
         )

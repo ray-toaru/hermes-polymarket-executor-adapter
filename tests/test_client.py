@@ -5,7 +5,13 @@ import pytest
 
 from hermes_polymarket_control.client import ExecutorClient
 from hermes_polymarket_control.config import ExecutorConfig
-from hermes_polymarket_control.models import MarketRef, QuantityIntent, Side, TradeIntent
+from hermes_polymarket_control.models import (
+    MarketRef,
+    QuantityIntent,
+    Side,
+    StandardSignOnlyConstructionRequest,
+    TradeIntent,
+)
 
 
 def test_service_operation_requires_service_token():
@@ -136,6 +142,24 @@ def test_v023_lifecycle_and_audit_client_methods(monkeypatch):
 
     def fake_post(self, url, json, headers):
         captured.append(("POST", url, json, headers, None))
+        if url.endswith("/v1/sign-only/standard-constructions"):
+            return httpx.Response(202, request=httpx.Request("POST", url), json={
+                "execution_id": json["execution_id"],
+                "signed_order_ref": json["signed_order_ref"],
+                "signed_order_digest": json["signed_order_digest"],
+                "lifecycle_records": [{
+                    "event_id": 8,
+                    "created_at": "2026-05-16T00:00:00Z",
+                    "execution_id": json["execution_id"],
+                    "account_id": json["account_id"],
+                    "state": "SIGNED_DRY_RUN",
+                    "event": "SIGNED_WITHOUT_POST",
+                    "client_event_id": "sdk-standard:hash-1:signed-without-post",
+                    "signed_order_ref": json["signed_order_ref"],
+                    "no_remote_side_effect": True,
+                }],
+                "no_remote_side_effect": True,
+            })
         return httpx.Response(202, request=httpx.Request("POST", url), json={
             "event_id": 7,
             "created_at": "2026-05-16T00:00:00Z",
@@ -204,6 +228,17 @@ def test_v023_lifecycle_and_audit_client_methods(monkeypatch):
         no_remote_side_effect=True,
     )
     recorded = client.record_sign_only_lifecycle_event(record, correlation_id="corr-1")
+    construction = client.record_standard_sign_only_construction(
+        StandardSignOnlyConstructionRequest(
+            execution_id="exec-1",
+            account_id="acct",
+            plan_hash="hash-1",
+            signed_order_ref="sign-only:exec-1:hash-1:digest",
+            signed_order_digest="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+            no_remote_side_effect=True,
+        ),
+        correlation_id="corr-std",
+    )
     sign_only = client.list_sign_only_lifecycle_events("exec-1", limit=10, before_event_id=9)
     lifecycle = client.list_execution_lifecycle_events("exec-1", limit=10)
     audit = client.list_admin_audit_events(
@@ -216,6 +251,7 @@ def test_v023_lifecycle_and_audit_client_methods(monkeypatch):
     )
 
     assert recorded.event_id == 7
+    assert construction.lifecycle_records[0].state == "SIGNED_DRY_RUN"
     assert sign_only[0].client_event_id == "evt-1"
     assert lifecycle[0].payload.schema_version == 1
     assert lifecycle[0].payload.body["no_remote_side_effect"] is True
@@ -226,7 +262,9 @@ def test_v023_lifecycle_and_audit_client_methods(monkeypatch):
     assert captured[-1][3]["X-Correlation-Id"] == "corr-admin-request"
     assert captured[-1][4]["correlation_id"] == "corr-admin"
     assert captured[-1][4]["principal_subject"] == "admin-token"
-    assert captured[1][4] == {"limit": 10, "before_event_id": 9}
+    assert captured[1][1].endswith("/v1/sign-only/standard-constructions")
+    assert captured[1][3]["X-Correlation-Id"] == "corr-std"
+    assert captured[2][4] == {"limit": 10, "before_event_id": 9}
     client.close()
 
 
