@@ -187,6 +187,14 @@ def test_reconcile_order_local_response_validates_local_only_boundary():
         no_remote_side_effect=True,
     )
     assert response.divergence.event == "RECONCILE_MISSING"
+    unknown = OrderLifecycleDivergence(
+        kind="LOCAL_REMOTE_UNKNOWN_STILL_UNKNOWN",
+        event="RECONCILE_UNKNOWN",
+        operator_required=True,
+        no_remote_side_effect=True,
+        reason="remote truth stayed unknown",
+    )
+    assert unknown.event == "RECONCILE_UNKNOWN"
 
     with pytest.raises(ValidationError):
         OrderLifecycleDivergence(

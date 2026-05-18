@@ -198,6 +198,7 @@ OrderEventKind = Literal[
     "CANCEL_CONFIRMED",
     "RECONCILE_OPEN",
     "RECONCILE_MISSING",
+    "RECONCILE_UNKNOWN",
 ]
 
 RemoteOrderObservation = Literal["OPEN", "MISSING", "UNKNOWN"]
