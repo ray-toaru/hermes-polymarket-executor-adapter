@@ -10,7 +10,8 @@
 ## Remaining risks
 
 - Client is still handwritten. Static parity checks reduce drift but do not eliminate it.
-- Runtime HTTP behavior depends on Rust executor tests not yet executed.
+- Runtime HTTP behavior depends on Rust executor tests and current evidence from
+  the pinned execution-engine submodule.
 
 ## Next step
 
