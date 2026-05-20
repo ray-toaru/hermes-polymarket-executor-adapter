@@ -4,6 +4,9 @@ import pytest
 from pydantic import ValidationError
 
 from hermes_polymarket_control.models import (
+    CanaryApprovalReference,
+    CanaryEvidenceReference,
+    CanaryReadinessReport,
     ExecutionLifecycleEvent,
     MarketRef,
     OrderLifecycleDivergence,
@@ -17,6 +20,7 @@ from hermes_polymarket_control.models import (
     TimeInForce,
     TradeIntent,
 )
+from hermes_polymarket_control.tools import build_canary_readiness_report
 
 
 def test_quantity_requires_exactly_one_bound():
@@ -203,4 +207,35 @@ def test_reconcile_order_local_response_validates_local_only_boundary():
             operator_required=False,
             no_remote_side_effect=False,
             reason="bad",
+        )
+
+
+def test_canary_readiness_report_is_reference_only_and_blocked():
+    evidence = CanaryEvidenceReference(
+        artifact_sha256="a" * 64,
+        evidence_manifest_sha256="b" * 64,
+        manifest_path="polymarket-execution-engine/evidence/current/manifest.json",
+        release_status="shadow-ready SDK sign-only candidate",
+    )
+    approval = CanaryApprovalReference(
+        approval_id="approval-1",
+        approval_hash="c" * 64,
+        scope="REAL_FUNDS_CANARY",
+        expires_at="2099-01-01T00:00:00Z",
+        operator_identity_ref="operator-ref",
+    )
+    report = build_canary_readiness_report(evidence, approval=approval)
+    assert report.status == "BLOCKED"
+    assert report.live_submit_allowed is False
+    assert report.remote_side_effects is False
+    assert report.secrets_included is False
+
+    with pytest.raises(ValidationError):
+        CanaryReadinessReport(
+            status="DRY_RUN_READY",
+            evidence=evidence,
+            approval=approval,
+            live_submit_allowed=True,
+            remote_side_effects=False,
+            secrets_included=False,
         )

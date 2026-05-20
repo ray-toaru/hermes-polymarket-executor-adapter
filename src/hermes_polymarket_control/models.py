@@ -398,3 +398,54 @@ class HealthReport(FrozenModel):
     executor_version: str
     contract_version: str
     checks: dict[str, Any] = Field(default_factory=dict)
+
+
+class CanaryEvidenceReference(FrozenModel):
+    artifact_sha256: str
+    evidence_manifest_sha256: str
+    manifest_path: str
+    release_status: str
+
+    @field_validator("artifact_sha256", "evidence_manifest_sha256")
+    @classmethod
+    def hashes_must_be_sha256(cls, value: str) -> str:
+        if not re.fullmatch(r"[0-9A-Fa-f]{64}", value):
+            raise ValueError("canary evidence hashes must be 64-character SHA-256 hex strings")
+        return value
+
+
+class CanaryApprovalReference(FrozenModel):
+    approval_id: str
+    approval_hash: str
+    scope: Literal["REAL_FUNDS_CANARY"]
+    expires_at: datetime
+    operator_identity_ref: str
+
+    @field_validator("approval_hash")
+    @classmethod
+    def approval_hash_must_be_sha256(cls, value: str) -> str:
+        if not re.fullmatch(r"[0-9A-Fa-f]{64}", value):
+            raise ValueError("approval_hash must be a 64-character SHA-256 hex string")
+        return value
+
+
+class CanaryReadinessReport(FrozenModel):
+    status: Literal["BLOCKED", "DRY_RUN_READY", "REVIEW_PACKAGE_ONLY"]
+    evidence: CanaryEvidenceReference
+    approval: CanaryApprovalReference | None = None
+    blocked_reasons: list[str] = Field(default_factory=list)
+    live_submit_allowed: bool
+    remote_side_effects: bool
+    secrets_included: bool
+
+    @model_validator(mode="after")
+    def must_remain_control_plane_only(self) -> "CanaryReadinessReport":
+        if self.live_submit_allowed:
+            raise ValueError("Hermes canary reports must not allow live submit")
+        if self.remote_side_effects:
+            raise ValueError("Hermes canary reports must not record remote side effects")
+        if self.secrets_included:
+            raise ValueError("Hermes canary reports must not include secrets")
+        if self.status == "BLOCKED" and not self.blocked_reasons:
+            raise ValueError("blocked canary reports require at least one reason")
+        return self
