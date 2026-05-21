@@ -8,6 +8,7 @@ on:
       - "src/**"
       - "tests/**"
       - "AGENTS.md"
+      - "constraints-ci.txt"
       - "README.md"
       - "pyproject.toml"
   pull_request:
@@ -17,6 +18,7 @@ on:
       - "src/**"
       - "tests/**"
       - "AGENTS.md"
+      - "constraints-ci.txt"
       - "README.md"
       - "pyproject.toml"
 
@@ -41,7 +43,7 @@ jobs:
       - name: Install package and test dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ".[test]"
+          python -m pip install -c constraints-ci.txt -e ".[test]"
 
       - name: Run tests
         env:

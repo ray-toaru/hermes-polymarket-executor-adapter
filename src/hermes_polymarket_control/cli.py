@@ -17,6 +17,14 @@ def main() -> int:
     subparsers.add_parser("health")
     canary = subparsers.add_parser("canary-report")
     canary.add_argument("--manifest", required=True)
+    canary.add_argument(
+        "--artifact-sha256",
+        help="External release artifact SHA-256. Required when the manifest artifact hash is null.",
+    )
+    canary.add_argument(
+        "--evidence-sidecar",
+        help="External .zip.evidence.json sidecar binding artifact and canonical evidence hashes.",
+    )
     canary.add_argument("--approval")
     canary.add_argument("--blocked-reason", action="append")
     args = parser.parse_args()
@@ -47,9 +55,25 @@ def _sha256(path: Path) -> str:
 def _canary_report(args: argparse.Namespace):
     manifest_path = Path(args.manifest)
     manifest = json.loads(manifest_path.read_text())
+    sidecar = json.loads(Path(args.evidence_sidecar).read_text()) if args.evidence_sidecar else {}
+    artifact_sha256 = (
+        args.artifact_sha256
+        or sidecar.get("artifact", {}).get("sha256")
+        or manifest.get("artifact", {}).get("sha256")
+    )
+    evidence_manifest_sha256 = (
+        sidecar.get("canonical_evidence", {}).get("manifest_sha256")
+        or _sha256(manifest_path)
+    )
+    if not artifact_sha256:
+        raise SystemExit(
+            "canary-report requires an artifact SHA-256. The supplied manifest is "
+            "source-candidate evidence with artifact.sha256=null; pass "
+            "--artifact-sha256 or --evidence-sidecar."
+        )
     evidence = CanaryEvidenceReference(
-        artifact_sha256=manifest["artifact"]["sha256"],
-        evidence_manifest_sha256=_sha256(manifest_path),
+        artifact_sha256=artifact_sha256,
+        evidence_manifest_sha256=evidence_manifest_sha256,
         manifest_path=str(manifest_path),
         release_status=manifest.get("release_decision", {}).get("status", "unknown"),
     )
