@@ -109,9 +109,15 @@ def test_admin_methods_use_admin_token(monkeypatch):
                 "no_remote_side_effect": True,
             })
         if url.endswith("/kill-switch"):
+            scope = json["scope"]
             return httpx.Response(202, request=httpx.Request("POST", url), json={
+                "scope": scope,
+                **({"account_id": json["account_id"]} if scope == "ACCOUNT" else {}),
                 "enabled": True,
                 "changed_at": "2026-05-14T00:00:00Z",
+                "effective_at": "2026-05-14T00:00:00Z",
+                "state_version": 1,
+                "persisted": True,
                 "reason": "test",
             })
         if url.endswith("/reconcile"):
@@ -129,7 +135,8 @@ def test_admin_methods_use_admin_token(monkeypatch):
 
     monkeypatch.setattr(httpx.Client, "post", fake_post)
     client = ExecutorClient(ExecutorConfig(base_url="http://executor", service_token="svc", admin_token="admin"))
-    client.set_kill_switch(True, "test")
+    client.set_kill_switch("acct", True, "test")
+    client.set_kill_switch(None, True, "test", scope="GLOBAL")
     client.reconcile("acct", "test")
     client.reconcile_order_local("acct", "o1", "MISSING", "first missing observation")
     client.cancel_order("acct", "o1", "test")

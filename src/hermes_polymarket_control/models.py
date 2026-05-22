@@ -381,9 +381,36 @@ class AdminAuditEvent(FrozenModel):
 
 
 class KillSwitchReceipt(FrozenModel):
+    scope: str
+    account_id: str | None = None
     enabled: bool
     changed_at: datetime
+    effective_at: datetime
+    state_version: int
+    persisted: bool
     reason: str
+
+    @field_validator("scope")
+    @classmethod
+    def _scope_is_supported(cls, value: str) -> str:
+        if value not in {"ACCOUNT", "GLOBAL"}:
+            raise ValueError("kill switch scope must be ACCOUNT or GLOBAL")
+        return value
+
+    @model_validator(mode="after")
+    def _account_id_matches_scope(self) -> "KillSwitchReceipt":
+        if self.scope == "ACCOUNT" and (self.account_id is None or not self.account_id.strip()):
+            raise ValueError("account_id must be non-empty for ACCOUNT scope")
+        if self.scope == "GLOBAL" and self.account_id is not None:
+            raise ValueError("account_id must be omitted for GLOBAL scope")
+        return self
+
+    @field_validator("account_id")
+    @classmethod
+    def _account_id_non_empty(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            raise ValueError("account_id must be non-empty")
+        return value
 
 
 class ReconcileReport(FrozenModel):

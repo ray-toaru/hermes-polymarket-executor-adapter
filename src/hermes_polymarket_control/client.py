@@ -156,9 +156,23 @@ class ExecutorClient:
     def get_submission(self, execution_id: str) -> SubmitReceipt:
         return SubmitReceipt.model_validate(self._get(f"/v1/submissions/{execution_id}"))
 
-    def set_kill_switch(self, enabled: bool, reason: str) -> KillSwitchReceipt:
+    def set_kill_switch(
+        self,
+        account_id: str | None,
+        enabled: bool,
+        reason: str,
+        *,
+        scope: str = "ACCOUNT",
+    ) -> KillSwitchReceipt:
+        payload = {"scope": scope, "enabled": enabled, "reason": reason}
+        if account_id is not None:
+            payload["account_id"] = account_id
         return KillSwitchReceipt.model_validate(
-            self._post("/v1/admin/kill-switch", {"enabled": enabled, "reason": reason}, admin=True)
+            self._post(
+                "/v1/admin/kill-switch",
+                payload,
+                admin=True,
+            )
         )
 
     def record_sign_only_lifecycle_event(
