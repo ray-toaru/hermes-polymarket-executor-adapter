@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
+from urllib.parse import quote
 
 import httpx
 
@@ -25,6 +26,21 @@ from .models import (
     SubmitReceipt,
     TradeIntent,
 )
+
+
+class ExecutorHttpError(RuntimeError):
+    def __init__(
+        self,
+        *,
+        status_code: int,
+        message: str,
+        code: str | None = None,
+        correlation_id: str | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+        self.code = code
+        self.correlation_id = correlation_id
 
 
 class ExecutorClient:
@@ -70,7 +86,7 @@ class ExecutorClient:
             json=payload,
             headers=self._headers(admin=admin, correlation_id=correlation_id),
         )
-        response.raise_for_status()
+        self._raise_for_status(response)
         return response.json()
 
     def _get(
@@ -87,12 +103,43 @@ class ExecutorClient:
         if params:
             kwargs["params"] = params
         response = self._client.get(f"{self.config.base_url}{path}", **kwargs)
-        response.raise_for_status()
+        self._raise_for_status(response)
         return response.json()
 
     @staticmethod
     def _query_params(**values: Any) -> dict[str, Any]:
         return {key: value for key, value in values.items() if value is not None}
+
+    @staticmethod
+    def _path_part(value: str) -> str:
+        return quote(value, safe="")
+
+    @staticmethod
+    def _raise_for_status(response: httpx.Response) -> None:
+        if response.status_code < 400:
+            return
+        code = None
+        correlation_id = None
+        message = response.text
+        try:
+            payload = response.json()
+        except ValueError:
+            payload = None
+        if isinstance(payload, dict):
+            if payload.get("code") is not None:
+                code = str(payload["code"])
+            if payload.get("correlation_id") is not None:
+                correlation_id = str(payload["correlation_id"])
+            if payload.get("message") is not None:
+                message = str(payload["message"])
+            elif payload.get("error") is not None:
+                message = str(payload["error"])
+        raise ExecutorHttpError(
+            status_code=response.status_code,
+            code=code,
+            correlation_id=correlation_id,
+            message=message,
+        )
 
     def health(self) -> HealthReport:
         return HealthReport.model_validate(self._get("/v1/health"))
@@ -141,7 +188,13 @@ class ExecutorClient:
             )
         )
 
-    def submit_plan(self, execution_id: str, plan_hash: str, idempotency_key: str) -> SubmitReceipt:
+    def submit_plan(
+        self,
+        execution_id: str,
+        plan_hash: str,
+        idempotency_key: str,
+        mode: Literal["BLOCKED_DRY_RUN", "LIVE"] = "BLOCKED_DRY_RUN",
+    ) -> SubmitReceipt:
         return SubmitReceipt.model_validate(
             self._post(
                 "/v1/submissions",
@@ -149,12 +202,15 @@ class ExecutorClient:
                     "execution_id": execution_id,
                     "plan_hash": plan_hash,
                     "idempotency_key": idempotency_key,
+                    "mode": mode,
                 },
             )
         )
 
     def get_submission(self, execution_id: str) -> SubmitReceipt:
-        return SubmitReceipt.model_validate(self._get(f"/v1/submissions/{execution_id}"))
+        return SubmitReceipt.model_validate(
+            self._get(f"/v1/submissions/{self._path_part(execution_id)}")
+        )
 
     def set_kill_switch(
         self,
@@ -212,7 +268,7 @@ class ExecutorClient:
         correlation_id: str | None = None,
     ) -> list[SignOnlyLifecycleRecord]:
         payload = self._get(
-            f"/v1/sign-only/lifecycle-events/{execution_id}",
+            f"/v1/sign-only/lifecycle-events/{self._path_part(execution_id)}",
             params=self._query_params(limit=limit, before_event_id=before_event_id),
             correlation_id=correlation_id,
         )
@@ -227,7 +283,7 @@ class ExecutorClient:
         correlation_id: str | None = None,
     ) -> list[ExecutionLifecycleEvent]:
         payload = self._get(
-            f"/v1/lifecycle/executions/{execution_id}/events",
+            f"/v1/lifecycle/executions/{self._path_part(execution_id)}/events",
             params=self._query_params(limit=limit, before_event_id=before_event_id),
             correlation_id=correlation_id,
         )

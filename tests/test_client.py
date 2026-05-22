@@ -3,7 +3,7 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from hermes_polymarket_control.client import ExecutorClient
+from hermes_polymarket_control.client import ExecutorClient, ExecutorHttpError
 from hermes_polymarket_control.config import ExecutorConfig
 from hermes_polymarket_control.models import (
     MarketRef,
@@ -21,10 +21,78 @@ def test_service_operation_requires_service_token():
     client.close()
 
 
+def test_executor_config_rejects_relative_base_url():
+    with pytest.raises(ValueError):
+        ExecutorConfig(base_url="/relative", service_token="svc")
+
+
+def test_get_paths_url_encode_identifiers(monkeypatch):
+    captured = {}
+
+    def fake_get(self, url, headers):
+        captured["url"] = url
+        return httpx.Response(200, request=httpx.Request("GET", url), json={
+            "execution_id": "exec/with space",
+            "receipt_id": "receipt-1",
+            "status": "BLOCKED",
+            "executor_version": "0.26.0",
+            "contract_version": "1.0.0-draft",
+        })
+
+    monkeypatch.setattr(httpx.Client, "get", fake_get)
+    client = ExecutorClient(ExecutorConfig(base_url="http://executor/", service_token="svc"))
+    client.get_submission("exec/with space")
+    assert captured["url"] == "http://executor/v1/submissions/exec%2Fwith%20space"
+    client.close()
+
+
+def test_executor_error_preserves_envelope(monkeypatch):
+    def fake_get(self, url, headers):
+        return httpx.Response(409, request=httpx.Request("GET", url), json={
+            "code": "conflict",
+            "message": "plan hash mismatch",
+            "correlation_id": "corr-err",
+        })
+
+    monkeypatch.setattr(httpx.Client, "get", fake_get)
+    client = ExecutorClient(ExecutorConfig(base_url="http://executor", service_token="svc"))
+    with pytest.raises(ExecutorHttpError) as raised:
+        client.health()
+    assert raised.value.status_code == 409
+    assert raised.value.code == "conflict"
+    assert raised.value.correlation_id == "corr-err"
+    assert "plan hash mismatch" in str(raised.value)
+    client.close()
+
+
 def test_admin_operation_requires_admin_token():
     client = ExecutorClient(ExecutorConfig(base_url="http://example.test", service_token="svc"))
     with pytest.raises(PermissionError):
         client.cancel_order("acct", "order", "test")
+    client.close()
+
+
+def test_submit_plan_posts_explicit_mode(monkeypatch):
+    captured = {}
+
+    def fake_post(self, url, json, headers):
+        captured["url"] = url
+        captured["json"] = json
+        captured["headers"] = headers
+        return httpx.Response(202, request=httpx.Request("POST", url), json={
+            "execution_id": json["execution_id"],
+            "receipt_id": "receipt-1",
+            "status": "BLOCKED",
+            "executor_version": "0.26.0",
+            "contract_version": "1.0.0-draft",
+        })
+
+    monkeypatch.setattr(httpx.Client, "post", fake_post)
+    client = ExecutorClient(ExecutorConfig(base_url="http://executor", service_token="svc"))
+    receipt = client.submit_plan("exec-1", "a" * 64, "idem-1")
+    assert receipt.status == "BLOCKED"
+    assert captured["url"] == "http://executor/v1/submissions"
+    assert captured["json"]["mode"] == "BLOCKED_DRY_RUN"
     client.close()
 
 

@@ -36,6 +36,12 @@ def _validate_decimal_string(value: str, *, field: str, positive: bool = False) 
     return value
 
 
+def _validate_sha256_hex(value: str, *, field: str) -> str:
+    if not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{64}", value):
+        raise ValueError(f"{field} must be a lowercase 64-character SHA-256 hex string")
+    return value
+
+
 class MarketRef(FrozenModel):
     condition_id: str
     slug: str | None = None
@@ -134,7 +140,35 @@ class ApprovalReceipt(FrozenModel):
     approval_id: str
     approved_by: str
     approved_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    expires_at: datetime
+    approval_scope: Literal["SHADOW", "CONTROLLED_CANARY", "LIVE_SUBMIT"]
     approval_hash: str
+    bound_artifact_sha256: str
+    bound_evidence_manifest_sha256: str
+    bound_snapshot_hash: str
+    bound_decision_hash: str
+    bound_plan_hash: str | None = None
+    operator_identity_ref: str
+
+    @field_validator(
+        "approval_hash",
+        "bound_artifact_sha256",
+        "bound_evidence_manifest_sha256",
+        "bound_snapshot_hash",
+        "bound_decision_hash",
+        "bound_plan_hash",
+    )
+    @classmethod
+    def hashes_must_be_sha256(cls, value: str | None, info: Any) -> str | None:
+        if value is None:
+            return value
+        return _validate_sha256_hex(value, field=info.field_name)
+
+    @model_validator(mode="after")
+    def expiry_must_follow_approval_time(self) -> ApprovalReceipt:
+        if self.expires_at <= self.approved_at:
+            raise ValueError("expires_at must be later than approved_at")
+        return self
 
 
 class ExecutionPlanSummary(FrozenModel):
@@ -142,11 +176,29 @@ class ExecutionPlanSummary(FrozenModel):
     account_id: str
     normalized_intent_id: str
     snapshot_id: str
+    snapshot_hash: str
     decision_id: str
+    decision_hash: str
+    approval_id: str
+    approval_hash: str
     plan_hash: str
     status: Literal["READY", "BLOCKED"]
+    condition_id: str
+    token_id: str
+    side: Side
+    quantity_bound: QuantityBound
+    limit_price: str
+    time_in_force: TimeInForce
+    collateral_profile_id: str | None = None
     max_exposure: str
+    executor_version: str
+    contract_version: str
     explanation: list[str] = Field(default_factory=list)
+
+    @field_validator("snapshot_hash", "decision_hash", "approval_hash", "plan_hash")
+    @classmethod
+    def plan_hashes_must_be_sha256(cls, value: str, info: Any) -> str:
+        return _validate_sha256_hex(value, field=info.field_name)
 
 
 class SubmitReceipt(FrozenModel):

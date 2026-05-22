@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import os
+from urllib.parse import urlparse
 
 
 @dataclass(frozen=True)
@@ -10,6 +11,14 @@ class ExecutorConfig:
     service_token: str
     admin_token: str | None = None
     timeout_seconds: float = 10.0
+
+    def __post_init__(self) -> None:
+        parsed = urlparse(self.base_url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise ValueError("executor base_url must be an absolute http(s) URL")
+        if self.timeout_seconds <= 0:
+            raise ValueError("executor timeout_seconds must be positive")
+        object.__setattr__(self, "base_url", self.base_url.rstrip("/"))
 
     @classmethod
     def from_env(cls) -> "ExecutorConfig":
