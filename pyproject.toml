@@ -1,6 +1,6 @@
 [project]
 name = "hermes-polymarket-control"
-version = "0.25.0"
+version = "0.26.0"
 description = "Hermes control-plane client for a standalone Polymarket execution engine"
 requires-python = ">=3.13"
 dependencies = [
