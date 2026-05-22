@@ -14,6 +14,19 @@ _CANONICAL_DECIMAL_RE = re.compile(r"^(0|[1-9][0-9]*)(\.[0-9]+)?$")
 class FrozenModel(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
+    @field_validator("*")
+    @classmethod
+    def id_ref_and_path_fields_must_not_be_blank(cls, value: Any, info: Any) -> Any:
+        field_name = info.field_name or ""
+        is_reference_field = (
+            field_name.endswith("_id")
+            or field_name.endswith("_ref")
+            or field_name in {"manifest_path"}
+        )
+        if is_reference_field and isinstance(value, str) and not value.strip():
+            raise ValueError(f"{field_name} must not be blank")
+        return value
+
 
 class Side(str, Enum):
     BUY = "BUY"

@@ -70,6 +70,36 @@ def test_trade_intent_rejects_extra_fields():
         )
 
 
+def test_id_and_ref_fields_must_not_be_blank():
+    with pytest.raises(ValidationError):
+        MarketRef(condition_id=" ")
+    with pytest.raises(ValidationError):
+        TradeIntent(
+            client_intent_id="i1",
+            account_id=" ",
+            market=MarketRef(condition_id="c1"),
+            token_id="t1",
+            side=Side.BUY,
+            quantity=QuantityIntent(max_notional="10"),
+            limit_price="0.5",
+        )
+    with pytest.raises(ValidationError):
+        CanaryEvidenceReference(
+            artifact_sha256="a" * 64,
+            evidence_manifest_sha256="b" * 64,
+            manifest_path=" ",
+            release_status="source-candidate",
+        )
+    with pytest.raises(ValidationError):
+        CanaryApprovalReference(
+            approval_id="approval-1",
+            approval_hash="c" * 64,
+            scope="REAL_FUNDS_CANARY",
+            expires_at="2099-01-01T00:00:00Z",
+            operator_identity_ref=" ",
+        )
+
+
 def test_sign_only_lifecycle_record_validates_boundary():
     ok = SignOnlyLifecycleRecord(
         execution_id="exec-1",
