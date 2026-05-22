@@ -22,6 +22,10 @@ from hermes_polymarket_control.models import (
 )
 from hermes_polymarket_control.tools import build_canary_readiness_report
 
+HASH_1 = "1" * 64
+DIGEST_1 = "2" * 64
+SIGN_ONLY_REF_1 = f"sign-only:exec-1:{HASH_1}:{DIGEST_1}"
+
 
 def test_quantity_requires_exactly_one_bound():
     with pytest.raises(ValidationError):
@@ -101,28 +105,27 @@ def test_sign_only_lifecycle_record_validates_boundary():
 
 
 def test_standard_sign_only_construction_models_validate_redaction_boundary():
-    digest = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
     request = StandardSignOnlyConstructionRequest(
         execution_id="exec-1",
         account_id="acct",
-        plan_hash="hash-1",
-        signed_order_ref="sign-only:exec-1:hash-1:digest",
-        signed_order_digest=digest,
+        plan_hash=HASH_1,
+        signed_order_ref=SIGN_ONLY_REF_1,
+        signed_order_digest=DIGEST_1,
         no_remote_side_effect=True,
     )
-    assert request.signed_order_digest == digest
+    assert request.signed_order_digest == DIGEST_1
 
     receipt = StandardSignOnlyConstructionReceipt(
         execution_id="exec-1",
-        signed_order_ref="sign-only:exec-1:hash-1:digest",
-        signed_order_digest=digest,
+        signed_order_ref=SIGN_ONLY_REF_1,
+        signed_order_digest=DIGEST_1,
         lifecycle_records=[
             SignOnlyLifecycleRecord(
                 execution_id="exec-1",
                 account_id="acct",
                 state="SIGNED_DRY_RUN",
                 event="SIGNED_WITHOUT_POST",
-                signed_order_ref="sign-only:exec-1:hash-1:digest",
+                signed_order_ref=SIGN_ONLY_REF_1,
                 no_remote_side_effect=True,
             )
         ],
@@ -134,18 +137,39 @@ def test_standard_sign_only_construction_models_validate_redaction_boundary():
         StandardSignOnlyConstructionRequest(
             execution_id="exec-1",
             account_id="acct",
-            plan_hash="hash-1",
+            plan_hash=HASH_1,
             signed_order_ref="raw-signed-order",
-            signed_order_digest=digest,
+            signed_order_digest=DIGEST_1,
             no_remote_side_effect=True,
         )
     with pytest.raises(ValueError):
         StandardSignOnlyConstructionRequest(
             execution_id="exec-1",
             account_id="acct",
-            plan_hash="hash-1",
+            plan_hash=HASH_1,
             signed_order_ref="sign-only:exec-1",
             signed_order_digest="not-a-digest",
+            no_remote_side_effect=True,
+        )
+
+
+def test_standard_sign_only_construction_ref_must_bind_plan_hash():
+    with pytest.raises(ValidationError):
+        StandardSignOnlyConstructionRequest(
+            execution_id="exec-1",
+            account_id="acct",
+            plan_hash="hash-1",
+            signed_order_ref=SIGN_ONLY_REF_1,
+            signed_order_digest=DIGEST_1,
+            no_remote_side_effect=True,
+        )
+    with pytest.raises(ValidationError):
+        StandardSignOnlyConstructionRequest(
+            execution_id="exec-1",
+            account_id="acct",
+            plan_hash=HASH_1,
+            signed_order_ref=f"sign-only:exec-1:{'3' * 64}:{DIGEST_1}",
+            signed_order_digest=DIGEST_1,
             no_remote_side_effect=True,
         )
 

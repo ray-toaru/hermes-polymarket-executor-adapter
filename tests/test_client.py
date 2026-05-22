@@ -13,6 +13,10 @@ from hermes_polymarket_control.models import (
     TradeIntent,
 )
 
+HASH_1 = "1" * 64
+DIGEST_1 = "2" * 64
+SIGN_ONLY_REF_1 = f"sign-only:exec-1:{HASH_1}:{DIGEST_1}"
+
 
 def test_service_operation_requires_service_token():
     client = ExecutorClient(ExecutorConfig(base_url="http://example.test", service_token=""))
@@ -229,7 +233,7 @@ def test_v023_lifecycle_and_audit_client_methods(monkeypatch):
                     "account_id": json["account_id"],
                     "state": "SIGNED_DRY_RUN",
                     "event": "SIGNED_WITHOUT_POST",
-                    "client_event_id": "sdk-standard:hash-1:signed-without-post",
+                    "client_event_id": f"sdk-standard:{HASH_1}:signed-without-post",
                     "signed_order_ref": json["signed_order_ref"],
                     "no_remote_side_effect": True,
                 }],
@@ -307,9 +311,9 @@ def test_v023_lifecycle_and_audit_client_methods(monkeypatch):
         StandardSignOnlyConstructionRequest(
             execution_id="exec-1",
             account_id="acct",
-            plan_hash="hash-1",
-            signed_order_ref="sign-only:exec-1:hash-1:digest",
-            signed_order_digest="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+            plan_hash=HASH_1,
+            signed_order_ref=SIGN_ONLY_REF_1,
+            signed_order_digest=DIGEST_1,
             no_remote_side_effect=True,
         ),
         correlation_id="corr-std",

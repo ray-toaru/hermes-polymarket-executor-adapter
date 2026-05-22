@@ -42,6 +42,20 @@ def _validate_sha256_hex(value: str, *, field: str) -> str:
     return value
 
 
+def _parse_sign_only_ref(value: str, *, field: str) -> tuple[str, str, str]:
+    if not isinstance(value, str):
+        raise ValueError(f"{field} must be a redacted sign-only ref")
+    parts = value.split(":")
+    if len(parts) != 4 or parts[0] != "sign-only":
+        raise ValueError(f"{field} must have format sign-only:<execution_id>:<plan_hash>:<digest>")
+    execution_id, plan_hash, digest = parts[1], parts[2], parts[3]
+    if not execution_id.strip():
+        raise ValueError(f"{field} execution_id must not be blank")
+    _validate_sha256_hex(plan_hash, field=f"{field}.plan_hash")
+    _validate_sha256_hex(digest, field=f"{field}.digest")
+    return execution_id, plan_hash, digest
+
+
 class MarketRef(FrozenModel):
     condition_id: str
     slug: str | None = None
@@ -364,8 +378,7 @@ class StandardSignOnlyConstructionRequest(FrozenModel):
     @field_validator("signed_order_ref")
     @classmethod
     def signed_order_ref_must_be_redacted(cls, value: str) -> str:
-        if not value.startswith("sign-only:"):
-            raise ValueError("standard sign-only construction requires a redacted sign-only ref")
+        _parse_sign_only_ref(value, field="signed_order_ref")
         return value
 
     @field_validator("signed_order_digest")
@@ -379,6 +392,16 @@ class StandardSignOnlyConstructionRequest(FrozenModel):
     def must_be_local_only(self) -> "StandardSignOnlyConstructionRequest":
         if not self.no_remote_side_effect:
             raise ValueError("standard sign-only construction must not contain remote side effects")
+        _validate_sha256_hex(self.plan_hash, field="plan_hash")
+        ref_execution_id, ref_plan_hash, ref_digest = _parse_sign_only_ref(
+            self.signed_order_ref, field="signed_order_ref"
+        )
+        if ref_execution_id != self.execution_id:
+            raise ValueError("signed_order_ref execution_id must match execution_id")
+        if ref_plan_hash != self.plan_hash:
+            raise ValueError("signed_order_ref plan_hash must match plan_hash")
+        if self.signed_order_digest is not None and ref_digest != self.signed_order_digest:
+            raise ValueError("signed_order_ref digest must match signed_order_digest")
         return self
 
 
@@ -393,8 +416,11 @@ class StandardSignOnlyConstructionReceipt(FrozenModel):
     def must_be_redacted_and_local_only(self) -> "StandardSignOnlyConstructionReceipt":
         if not self.no_remote_side_effect:
             raise ValueError("standard sign-only receipt must not contain remote side effects")
-        if not self.signed_order_ref.startswith("sign-only:"):
-            raise ValueError("standard sign-only receipt requires a redacted sign-only ref")
+        _parse_sign_only_ref(self.signed_order_ref, field="signed_order_ref")
+        if self.signed_order_digest is not None:
+            _, _, ref_digest = _parse_sign_only_ref(self.signed_order_ref, field="signed_order_ref")
+            if ref_digest != self.signed_order_digest:
+                raise ValueError("signed_order_ref digest must match signed_order_digest")
         return self
 
 
