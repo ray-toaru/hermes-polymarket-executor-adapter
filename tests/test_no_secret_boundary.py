@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 
-def test_control_plane_has_no_secret_or_live_clob_terms():
+def test_executor_adapter_has_no_secret_or_live_clob_terms():
     root = Path(__file__).resolve().parents[1]
     forbidden = [a + b for a, b in [
         ("POLYMARKET", "_PRIVATE_KEY"),

@@ -1,4 +1,4 @@
-# Control Plane Security Boundaries
+# Executor Adapter Security Boundaries
 
 The Python project must never contain or request:
 

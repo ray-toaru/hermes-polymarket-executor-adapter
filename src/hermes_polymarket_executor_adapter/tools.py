@@ -15,9 +15,10 @@ def propose_and_compile(
     intent: TradeIntent,
     approval: ApprovalReceipt,
 ):
-    """Control-plane orchestration helper.
+    """Executor-adapter orchestration helper.
 
-    It does not sign or submit by itself. The executor decides feasibility and compiles a plan summary.
+    It does not sign or submit by itself. The executor decides feasibility and
+    compiles a plan summary.
     """
 
     normalized = client.normalize_intent(intent)

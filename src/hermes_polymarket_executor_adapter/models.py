@@ -557,7 +557,7 @@ class CanaryReadinessReport(FrozenModel):
     secrets_included: bool
 
     @model_validator(mode="after")
-    def must_remain_control_plane_only(self) -> "CanaryReadinessReport":
+    def must_remain_executor_adapter_only(self) -> "CanaryReadinessReport":
         if self.live_submit_allowed:
             raise ValueError("Hermes canary reports must not allow live submit")
         if self.remote_side_effects:

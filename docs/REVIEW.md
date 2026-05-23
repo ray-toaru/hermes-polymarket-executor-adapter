@@ -1,4 +1,4 @@
-# Control Plane Review — v0.3
+# Executor Adapter Review — v0.3
 
 ## Improved
 
