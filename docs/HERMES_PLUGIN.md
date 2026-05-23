@@ -77,6 +77,13 @@ This contract is a local schema/guard for assistant sessions. It does not
 authorize live trading and does not replace executor release decisions,
 runtime truth, or canary approval checks.
 
+The plugin also exposes the required assistant-v0 adapter tools under
+`polymarket_assistant_v0`. The current facade is deliberately fail-closed:
+`risk_review_trade_plan`, `dry_run_trade_plan`, and `get_execution_status`
+return structured non-live responses without submitting, signing, canceling, or
+granting approval. This keeps the assistant surface testable while preserving
+the executor API as the only authority for real execution.
+
 ## Boundary
 
 The plugin must not:

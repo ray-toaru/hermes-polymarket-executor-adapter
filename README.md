@@ -23,6 +23,10 @@ own executor risk policy.
 - Assistant-v0 safe session contract keeps local assistant tools separate from
   adapter-backed executor tools and rejects signing, posting, cancel-live, raw
   CLOB, direct DB, and approval-granting tool names.
+- The optional `polymarket_assistant_v0` facade registers only risk review,
+  blocked dry-run, and status tools. Its default handlers do not call the
+  executor and always keep live submission false until explicit executor-backed
+  implementations replace the stubs.
 - Hermes executor adapter naming and package metadata are aligned with the
   repository responsibility boundary.
 - Boundary remains no signing, no direct CLOB, no executor database credentials,

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from . import assistant_v0_facade
 from . import hermes_handlers as handlers
 from . import hermes_schemas as schemas
 
@@ -9,6 +10,9 @@ ADMIN_ENV = ["PM_EXEC_SERVICE_TOKEN", "PM_EXEC_ADMIN_TOKEN"]
 
 
 def register(ctx) -> None:
+    for spec in assistant_v0_facade.build_assistant_v0_tool_specs():
+        _register_assistant_v0_tool(ctx, spec)
+
     _register_service_tool(
         ctx,
         "polymarket_executor_health",
@@ -123,4 +127,19 @@ def _register_admin_tool(ctx, name: str, schema: dict, handler, description: str
         check_fn=handlers.check_admin_available,
         requires_env=ADMIN_ENV,
         description=description,
+    )
+
+
+def _register_assistant_v0_tool(
+    ctx,
+    spec: assistant_v0_facade.AssistantV0ToolSpec,
+) -> None:
+    ctx.register_tool(
+        name=spec.name,
+        toolset=assistant_v0_facade.ASSISTANT_V0_TOOLSET,
+        schema=spec.schema,
+        handler=spec.handler,
+        check_fn=handlers.check_executor_available,
+        requires_env=SERVICE_ENV,
+        description=spec.description,
     )
