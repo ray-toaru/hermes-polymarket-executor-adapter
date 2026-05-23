@@ -39,7 +39,7 @@ def test_get_paths_url_encode_identifiers(monkeypatch):
             "execution_id": "exec/with space",
             "receipt_id": "receipt-1",
             "status": "BLOCKED",
-            "executor_version": "0.26.0",
+            "executor_version": "0.26.1",
             "contract_version": "1.0.0-draft",
         })
 
@@ -87,7 +87,7 @@ def test_submit_plan_posts_explicit_mode(monkeypatch):
             "execution_id": json["execution_id"],
             "receipt_id": "receipt-1",
             "status": "BLOCKED",
-            "executor_version": "0.26.0",
+            "executor_version": "0.26.1",
             "contract_version": "1.0.0-draft",
         })
 

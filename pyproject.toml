@@ -1,6 +1,6 @@
 [project]
 name = "hermes-polymarket-executor-adapter"
-version = "0.26.0"
+version = "0.26.1"
 description = "Hermes-compatible executor adapter for a standalone Polymarket execution engine"
 requires-python = ">=3.13"
 dependencies = [
