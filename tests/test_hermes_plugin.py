@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 import tomllib
 
 
@@ -13,7 +14,8 @@ class FakeContext:
 
 
 def test_pyproject_exposes_hermes_plugin_entrypoint():
-    with open("pyproject.toml", "rb") as fh:
+    pyproject_path = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    with pyproject_path.open("rb") as fh:
         project = tomllib.load(fh)
 
     assert (
