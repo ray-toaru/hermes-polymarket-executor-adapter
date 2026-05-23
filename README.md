@@ -20,6 +20,9 @@ own executor risk policy.
 - Safe canary report helpers that do not authorize live trading.
 - Hermes plugin entry point exposes a native `polymarket_executor` toolset and
   a separate `polymarket_executor_admin` toolset.
+- Assistant-v0 safe session contract keeps local assistant tools separate from
+  adapter-backed executor tools and rejects signing, posting, cancel-live, raw
+  CLOB, direct DB, and approval-granting tool names.
 - Hermes executor adapter naming and package metadata are aligned with the
   repository responsibility boundary.
 - Boundary remains no signing, no direct CLOB, no executor database credentials,

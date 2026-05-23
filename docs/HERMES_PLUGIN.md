@@ -58,6 +58,25 @@ Admin tools use the `polymarket_executor_admin` toolset:
 Admin tools require both service and admin API tokens. Mutating admin tools also
 require a human-readable `reason`.
 
+## Assistant-v0 safe session contract
+
+`hermes_polymarket_executor_adapter.assistant_v0_contracts` defines the
+optional assistant-facing safe-session contract. It is intentionally narrower
+than the executor API:
+
+- adapter-backed required tools: `risk_review_trade_plan`,
+  `dry_run_trade_plan`, `get_execution_status`
+- assistant-local tools may draft, compare, record review references, and
+  render reports without gaining executor-side authority
+- `dry_run_trade_plan` always maps to `BLOCKED_DRY_RUN`; callers cannot pass a
+  live mode or an `approval_id` alias
+- forbidden names include signing, posting, live cancel, raw CLOB, direct DB,
+  fund transfer, API-key creation, and approval-granting tools
+
+This contract is a local schema/guard for assistant sessions. It does not
+authorize live trading and does not replace executor release decisions,
+runtime truth, or canary approval checks.
+
 ## Boundary
 
 The plugin must not:
