@@ -11,6 +11,7 @@ wrappers for Hermes-facing workflows.
 - typed executor client calls
 - Pydantic models aligned to the executor OpenAPI contract
 - Hermes-compatible tool schema wrappers
+- Hermes plugin registration for service/admin executor tools
 - safe report rendering
 - service/admin token separation
 - no-secret static checks
@@ -52,7 +53,16 @@ Examples:
 
 ## Future Hermes Integration
 
-This package can later wrap the `ExecutorClient` methods as Hermes tools. That integration should still preserve the same forbidden-data boundary.
+This package wraps selected `ExecutorClient` methods as Hermes plugin tools. The
+integration preserves the same forbidden-data boundary and keeps admin tools in a
+separate toolset with explicit admin token availability checks.
+
+## MCP Position
+
+MCP is not the primary integration path for this repository. A future MCP facade
+may be added only when non-Hermes agents need the same executor adapter surface.
+It must reuse the existing client/models and must not broaden the adapter's
+authority.
 
 ## Versioning
 

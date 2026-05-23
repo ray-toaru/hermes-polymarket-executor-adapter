@@ -1,0 +1,238 @@
+from __future__ import annotations
+
+import json
+import os
+from typing import Any, Callable
+
+from pydantic import ValidationError
+
+from .client import ExecutorClient
+from .config import ExecutorConfig
+from .models import (
+    ApprovalReceipt,
+    CanaryApprovalReference,
+    CanaryEvidenceReference,
+    ConstraintDecision,
+    FeasibilitySnapshot,
+    NormalizedIntent,
+    TradeIntent,
+)
+from .tools import build_canary_readiness_report
+
+
+def check_executor_available() -> bool:
+    return bool(os.environ.get("PM_EXEC_SERVICE_TOKEN"))
+
+
+def check_admin_available() -> bool:
+    return bool(os.environ.get("PM_EXEC_SERVICE_TOKEN") and os.environ.get("PM_EXEC_ADMIN_TOKEN"))
+
+
+def _result(payload: Any) -> str:
+    if hasattr(payload, "model_dump"):
+        payload = payload.model_dump(mode="json")
+    return json.dumps(payload, ensure_ascii=False, sort_keys=True)
+
+
+def _error(message: str) -> str:
+    return json.dumps({"error": message}, ensure_ascii=False, sort_keys=True)
+
+
+def _validate(model: type, payload: Any):
+    return model.model_validate(payload)
+
+
+def _with_client(fn: Callable[[ExecutorClient], Any]) -> str:
+    client = ExecutorClient(ExecutorConfig.from_env())
+    try:
+        return _result(fn(client))
+    except (PermissionError, RuntimeError, ValidationError, ValueError) as exc:
+        return _error(str(exc))
+    finally:
+        client.close()
+
+
+def _required_text(args: dict, key: str) -> str | None:
+    value = args.get(key)
+    if isinstance(value, str) and value.strip():
+        return value
+    return None
+
+
+def handle_executor_health(args: dict, **_kwargs) -> str:
+    return _with_client(lambda client: client.health())
+
+
+def handle_normalize_intent(args: dict, **_kwargs) -> str:
+    try:
+        intent = _validate(TradeIntent, args["intent"])
+    except KeyError:
+        return _error("intent is required")
+    except ValidationError as exc:
+        return _error(str(exc))
+    return _with_client(lambda client: client.normalize_intent(intent))
+
+
+def handle_capture_snapshot(args: dict, **_kwargs) -> str:
+    try:
+        normalized = _validate(NormalizedIntent, args["normalized"])
+    except KeyError:
+        return _error("normalized is required")
+    except ValidationError as exc:
+        return _error(str(exc))
+    return _with_client(lambda client: client.capture_snapshot(normalized))
+
+
+def handle_evaluate_decision(args: dict, **_kwargs) -> str:
+    try:
+        normalized = _validate(NormalizedIntent, args["normalized"])
+        snapshot = _validate(FeasibilitySnapshot, args["snapshot"])
+    except KeyError as exc:
+        return _error(f"{exc.args[0]} is required")
+    except ValidationError as exc:
+        return _error(str(exc))
+    return _with_client(lambda client: client.evaluate_decision(normalized, snapshot))
+
+
+def handle_compile_plan(args: dict, **_kwargs) -> str:
+    try:
+        normalized = _validate(NormalizedIntent, args["normalized"])
+        snapshot = _validate(FeasibilitySnapshot, args["snapshot"])
+        decision = _validate(ConstraintDecision, args["decision"])
+        approval = _validate(ApprovalReceipt, args["approval"])
+    except KeyError as exc:
+        return _error(f"{exc.args[0]} is required")
+    except ValidationError as exc:
+        return _error(str(exc))
+    return _with_client(lambda client: client.compile_plan(normalized, snapshot, decision, approval))
+
+
+def handle_prepare_execution_plan(args: dict, **_kwargs) -> str:
+    try:
+        intent = _validate(TradeIntent, args["intent"])
+        approval = _validate(ApprovalReceipt, args["approval"])
+    except KeyError as exc:
+        return _error(f"{exc.args[0]} is required")
+    except ValidationError as exc:
+        return _error(str(exc))
+
+    def prepare(client: ExecutorClient):
+        normalized = client.normalize_intent(intent)
+        snapshot = client.capture_snapshot(normalized)
+        decision = client.evaluate_decision(normalized, snapshot)
+        return client.compile_plan(normalized, snapshot, decision, approval)
+
+    return _with_client(prepare)
+
+
+def handle_get_submission(args: dict, **_kwargs) -> str:
+    execution_id = _required_text(args, "execution_id")
+    if execution_id is None:
+        return _error("execution_id is required")
+    return _with_client(lambda client: client.get_submission(execution_id))
+
+
+def handle_list_execution_lifecycle_events(args: dict, **_kwargs) -> str:
+    execution_id = _required_text(args, "execution_id")
+    if execution_id is None:
+        return _error("execution_id is required")
+    return _with_client(
+        lambda client: client.list_execution_lifecycle_events(
+            execution_id,
+            limit=args.get("limit"),
+            before_event_id=args.get("before_event_id"),
+            correlation_id=args.get("correlation_id"),
+        )
+    )
+
+
+def handle_canary_report(args: dict, **_kwargs) -> str:
+    try:
+        evidence = _validate(CanaryEvidenceReference, args["evidence"])
+        approval = None
+        if args.get("approval") is not None:
+            approval = _validate(CanaryApprovalReference, args["approval"])
+        report = build_canary_readiness_report(
+            evidence,
+            approval=approval,
+            blocked_reasons=args.get("blocked_reasons"),
+        )
+    except KeyError:
+        return _error("evidence is required")
+    except ValidationError as exc:
+        return _error(str(exc))
+    return _result(report)
+
+
+def handle_admin_kill_switch(args: dict, **_kwargs) -> str:
+    reason = _required_text(args, "reason")
+    if reason is None:
+        return _error("reason is required")
+    if args.get("enabled") is None:
+        return _error("enabled is required")
+    scope = str(args.get("scope") or "ACCOUNT")
+    account_id = args.get("account_id")
+    if scope == "ACCOUNT" and not account_id:
+        return _error("account_id is required for ACCOUNT scope")
+    if scope == "GLOBAL":
+        account_id = None
+    return _with_client(
+        lambda client: client.set_kill_switch(
+            account_id,
+            bool(args["enabled"]),
+            reason,
+            scope=scope,
+        )
+    )
+
+
+def handle_admin_cancel_order(args: dict, **_kwargs) -> str:
+    account_id = _required_text(args, "account_id")
+    order_id = _required_text(args, "order_id")
+    reason = _required_text(args, "reason")
+    if account_id is None:
+        return _error("account_id is required")
+    if order_id is None:
+        return _error("order_id is required")
+    if reason is None:
+        return _error("reason is required")
+    return _with_client(
+        lambda client: client.cancel_order(
+            account_id,
+            order_id,
+            reason,
+            execution_id=args.get("execution_id"),
+            correlation_id=args.get("correlation_id"),
+        )
+    )
+
+
+def handle_admin_reconcile(args: dict, **_kwargs) -> str:
+    account_id = _required_text(args, "account_id")
+    reason = _required_text(args, "reason")
+    if account_id is None:
+        return _error("account_id is required")
+    if reason is None:
+        return _error("reason is required")
+    return _with_client(
+        lambda client: client.reconcile(
+            account_id,
+            reason,
+            execution_id=args.get("execution_id"),
+            correlation_id=args.get("correlation_id"),
+        )
+    )
+
+
+def handle_admin_list_audit_events(args: dict, **_kwargs) -> str:
+    return _with_client(
+        lambda client: client.list_admin_audit_events(
+            limit=args.get("limit"),
+            before_audit_id=args.get("before_audit_id"),
+            operation=args.get("operation"),
+            principal_subject=args.get("principal_subject"),
+            result=args.get("result"),
+            audit_correlation_id=args.get("audit_correlation_id"),
+            correlation_id=args.get("correlation_id"),
+        )
+    )

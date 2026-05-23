@@ -11,6 +11,9 @@ dependencies = [
 [project.optional-dependencies]
 test = ["pytest>=9.0.2"]
 
+[project.entry-points."hermes_agent.plugins"]
+polymarket-executor = "hermes_polymarket_executor_adapter.hermes_plugin"
+
 [build-system]
 requires = ["setuptools>=82.0.1", "wheel>=0.46.3"]
 build-backend = "setuptools.build_meta"

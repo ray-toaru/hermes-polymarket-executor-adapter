@@ -18,11 +18,36 @@ own executor risk policy.
 - Service/admin token client separation.
 - Admin helpers for kill switch, cancel, and reconcile.
 - Safe canary report helpers that do not authorize live trading.
+- Hermes plugin entry point exposes a native `polymarket_executor` toolset and
+  a separate `polymarket_executor_admin` toolset.
 - Hermes executor adapter naming and package metadata are aligned with the
   repository responsibility boundary.
 - Boundary remains no signing, no direct CLOB, no executor database credentials,
   and no release/canary governance ownership.
 - Tests pass in this environment.
+
+## Hermes plugin
+
+Install the adapter into the Hermes Python environment and enable the plugin:
+
+```bash
+python -m pip install -e .
+hermes plugins enable polymarket-executor
+```
+
+Configure executor API tokens at runtime:
+
+```bash
+export PM_EXEC_SERVICE_URL=http://localhost:8080
+export PM_EXEC_SERVICE_TOKEN=...
+export PM_EXEC_ADMIN_TOKEN=...  # only required for admin tools
+```
+
+Service tools are registered under `polymarket_executor`; admin tools are
+registered under `polymarket_executor_admin` and require both service and admin
+tokens. See `docs/HERMES_PLUGIN.md` for the tool list and operating boundary.
+The composite `polymarket_prepare_execution_plan` tool stops at plan
+compilation and does not submit.
 
 ## Run tests
 
@@ -33,6 +58,12 @@ PYTHONPATH=src python -m compileall -q src tests
 
 Cross-repository OpenAPI parity is validated from the integration repository that checks out this
 repo alongside `polymarket-execution-engine`.
+
+## Integration roadmap
+
+Stages 0-7 are tracked in `docs/ROADMAP.md`. MCP is intentionally a phase-7
+facade evaluation after the native Hermes plugin path is stable; it must reuse
+the same no-signing adapter boundary if implemented.
 
 ## Agent instructions
 
