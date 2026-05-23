@@ -1,11 +1,28 @@
-# Hermes Polymarket Control Architecture
+# Hermes Polymarket Executor Adapter Architecture
 
 ## Role
 
-`hermes-polymarket-control` is the Hermes-facing control project. It produces intents, collects approvals, calls the execution engine, and renders reports.
+`hermes-polymarket-control` is the current v0.26 repository/package name for
+the Hermes-compatible executor adapter. It provides typed executor API clients,
+schema models, and safe report/tool wrappers for Hermes-facing workflows.
+
+The target role/name is `hermes-polymarket-executor-adapter`. The rename should
+be handled as a migration that updates repository metadata, package metadata,
+submodule pointers, CI, release packaging, and downstream import expectations.
+
+## It May Own
+
+- typed executor client calls
+- Pydantic models aligned to the executor OpenAPI contract
+- Hermes-compatible tool schema wrappers
+- safe report rendering
+- service/admin token separation
+- no-secret static checks
 
 ## It Does Not
 
+- own trading strategy
+- own execution-engine risk policy
 - sign orders
 - hold private keys
 - hold CLOB API secrets
@@ -17,7 +34,7 @@
 ## Allowed Flow
 
 ```text
-strategy/operator input
+operator/tool input
   -> TradeIntent
   -> ExecutorClient.normalize_intent
   -> ExecutorClient.capture_snapshot
@@ -40,3 +57,9 @@ Examples:
 ## Future Hermes Integration
 
 This package can later wrap the `ExecutorClient` methods as Hermes tools. That integration should still preserve the same forbidden-data boundary.
+
+## Versioning
+
+This adapter may version independently from the execution engine after v0.26. A
+suite release pins a tested adapter commit and execution-engine commit. The
+adapter must document which executor API contract versions it supports.

@@ -1,17 +1,28 @@
-# Hermes Polymarket Control
+# Hermes Polymarket Executor Adapter
 
-Python control-plane client for the standalone Polymarket execution engine.
+Python Hermes-compatible executor adapter for the standalone Polymarket
+execution engine.
+
+The current repository and package name remain `hermes-polymarket-control` for
+v0.26 compatibility. The target role/name is
+`hermes-polymarket-executor-adapter`; a repository/package rename should be a
+planned migration, not an incidental source edit.
 
 ## Boundary
 
-This package may submit intents and admin commands to the executor API. It must not hold private keys, CLOB API secrets, raw signed payloads, or executor database credentials.
+This package may send typed service/admin/query requests to the executor API
+and render safe reports for Hermes-compatible tooling. It must not hold private
+keys, CLOB API secrets, raw signed payloads, or executor database credentials.
+It must not sign, submit live orders, cancel live orders, call CLOB directly, or
+own executor risk policy.
 
-## v0.3 status
+## v0.26 status
 
 - Pydantic models aligned with OpenAPI public schemas.
 - Canonical decimal validation aligned with executor source.
 - Service/admin token client separation.
 - Admin helpers for kill switch, cancel, and reconcile.
+- Safe canary report helpers that do not authorize live trading.
 - Tests pass in this environment.
 
 ## Run tests
@@ -26,4 +37,4 @@ repo alongside `polymarket-execution-engine`.
 
 ## Agent instructions
 
-See `AGENTS.md` for control-plane-specific agent rules.
+See `AGENTS.md` for adapter-specific agent rules.

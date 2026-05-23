@@ -1,4 +1,4 @@
-"""Hermes control-plane client for the Polymarket execution engine."""
+"""Hermes-compatible executor adapter for the Polymarket execution engine."""
 
 __version__ = "0.26.0"
 

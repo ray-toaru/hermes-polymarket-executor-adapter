@@ -12,7 +12,7 @@ from .tools import build_canary_readiness_report
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Hermes Polymarket control-plane client")
+    parser = argparse.ArgumentParser(description="Hermes Polymarket executor adapter")
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("health")
     canary = subparsers.add_parser("canary-report")
