@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from hermes_polymarket_control.models import (
+from hermes_polymarket_executor_adapter.models import (
     CanaryApprovalReference,
     CanaryEvidenceReference,
     CanaryReadinessReport,
@@ -20,7 +20,7 @@ from hermes_polymarket_control.models import (
     TimeInForce,
     TradeIntent,
 )
-from hermes_polymarket_control.tools import build_canary_readiness_report
+from hermes_polymarket_executor_adapter.tools import build_canary_readiness_report
 
 HASH_1 = "1" * 64
 DIGEST_1 = "2" * 64

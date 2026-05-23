@@ -3,9 +3,9 @@ from __future__ import annotations
 import httpx
 import pytest
 
-from hermes_polymarket_control.client import ExecutorClient, ExecutorHttpError
-from hermes_polymarket_control.config import ExecutorConfig
-from hermes_polymarket_control.models import (
+from hermes_polymarket_executor_adapter.client import ExecutorClient, ExecutorHttpError
+from hermes_polymarket_executor_adapter.config import ExecutorConfig
+from hermes_polymarket_executor_adapter.models import (
     MarketRef,
     QuantityIntent,
     Side,
@@ -295,7 +295,7 @@ def test_v023_lifecycle_and_audit_client_methods(monkeypatch):
     monkeypatch.setattr(httpx.Client, "get", fake_get)
     client = ExecutorClient(ExecutorConfig(base_url="http://executor", service_token="svc", admin_token="admin"))
 
-    from hermes_polymarket_control.models import SignOnlyLifecycleRecord
+    from hermes_polymarket_executor_adapter.models import SignOnlyLifecycleRecord
 
     record = SignOnlyLifecycleRecord(
         execution_id="exec-1",

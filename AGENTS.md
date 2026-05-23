@@ -1,8 +1,8 @@
-# AGENTS.md — Hermes control plane
+# AGENTS.md — Hermes executor adapter
 
 ## Scope
 
-Applies to this repository, the Python control-plane client.
+Applies to this repository, the Python executor adapter.
 
 ## Boundary
 
@@ -27,11 +27,11 @@ PYTHONPATH=src python -m pytest -q
 PYTHONPATH=src python -m compileall -q src tests
 ```
 
-From the integration repository root, when this repository is checked out as `hermes-polymarket-control`:
+From the integration repository root, when this repository is checked out as `hermes-polymarket-executor-adapter`:
 
 ```bash
-PYTHONPATH=hermes-polymarket-control/src python -m pytest -q hermes-polymarket-control/tests
-python -m compileall -q hermes-polymarket-control/src hermes-polymarket-control/tests
+PYTHONPATH=hermes-polymarket-executor-adapter/src python -m pytest -q hermes-polymarket-executor-adapter/tests
+python -m compileall -q hermes-polymarket-executor-adapter/src hermes-polymarket-executor-adapter/tests
 ```
 
 ## Documentation

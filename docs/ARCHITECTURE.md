@@ -2,13 +2,9 @@
 
 ## Role
 
-`hermes-polymarket-control` is the current v0.26 repository/package name for
-the Hermes-compatible executor adapter. It provides typed executor API clients,
-schema models, and safe report/tool wrappers for Hermes-facing workflows.
-
-The target role/name is `hermes-polymarket-executor-adapter`. The rename should
-be handled as a migration that updates repository metadata, package metadata,
-submodule pointers, CI, release packaging, and downstream import expectations.
+`hermes-polymarket-executor-adapter` is the Hermes-compatible executor adapter.
+It provides typed executor API clients, schema models, and safe report/tool
+wrappers for Hermes-facing workflows.
 
 ## It May Own
 

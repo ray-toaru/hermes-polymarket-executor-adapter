@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from hermes_polymarket_control.cli import _canary_report
+from hermes_polymarket_executor_adapter.cli import _canary_report
 
 
 def write_json(path, payload):

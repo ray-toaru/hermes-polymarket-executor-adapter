@@ -3,11 +3,6 @@
 Python Hermes-compatible executor adapter for the standalone Polymarket
 execution engine.
 
-The current repository and package name remain `hermes-polymarket-control` for
-v0.26 compatibility. The target role/name is
-`hermes-polymarket-executor-adapter`; a repository/package rename should be a
-planned migration, not an incidental source edit.
-
 ## Boundary
 
 This package may send typed service/admin/query requests to the executor API
