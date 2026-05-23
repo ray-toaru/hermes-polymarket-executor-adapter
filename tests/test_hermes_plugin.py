@@ -18,6 +18,7 @@ def test_pyproject_exposes_hermes_plugin_entrypoint():
     with pyproject_path.open("rb") as fh:
         project = tomllib.load(fh)
 
+    assert project["project"]["requires-python"] == ">=3.11"
     assert (
         project["project"]["entry-points"]["hermes_agent.plugins"]["polymarket-executor"]
         == "hermes_polymarket_executor_adapter.hermes_plugin"

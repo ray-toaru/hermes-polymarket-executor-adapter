@@ -38,7 +38,8 @@ Status: implemented.
 
 Status: implemented.
 
-- `pyproject.toml` exposes the `hermes_agent.plugins` entry point.
+- `pyproject.toml` exposes the `hermes_agent.plugins` entry point and supports
+  Python 3.11+ so it can run in the current Hermes runtime profile.
 - `hermes_plugin.py` registers Hermes-native tools through `ctx.register_tool`.
 - `hermes_handlers.py` adapts Hermes tool calls to `ExecutorClient`.
 - `hermes_schemas.py` contains the tool schemas shown to Hermes.
@@ -107,5 +108,5 @@ Status: evaluated, not implemented.
 2. Keep no-secret and no-signing tests green under the integration repository.
 3. Update supported executor contract notes if the execution-engine API changes
    before the v0.27 suite release.
-4. Validate the plugin inside a Hermes runtime after installing the package into
-   that environment and enabling `polymarket-executor`.
+4. Validate the plugin inside the target Hermes profile with
+   `scripts/check_hermes_profile_plugin.py --profile-cmd hm-pdp-test`.

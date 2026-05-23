@@ -14,6 +14,9 @@
 - Documentation of forbidden responsibilities: no signing, no direct CLOB, no
   executor database credentials, no release/canary governance ownership.
 - Operator documentation for Hermes plugin setup and MCP evaluation.
+- Local `hm-pdp-test` Hermes runtime validation: the entry-point plugin is
+  importable in the Hermes runtime venv and exposes `polymarket_executor` plus
+  `polymarket_executor_admin` toolsets.
 
 ## Still Required Before v0.27 Suite Release
 
@@ -22,5 +25,6 @@
 - Keep package/version compatibility recorded in `COMPONENT_COMPATIBILITY.md`.
 - Preserve the adapter as a Hermes executor adapter only; execution authority
   remains in `polymarket-execution-engine`.
-- Validate `polymarket-executor` inside a live Hermes runtime before suite
-  release tagging.
+- Replace the current local profile install procedure with a packaged Hermes
+  plugin distribution if Hermes keeps directory plugins and pip entry-point
+  plugin enablement on separate CLI paths.

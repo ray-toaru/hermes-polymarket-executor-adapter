@@ -2,7 +2,7 @@
 name = "hermes-polymarket-executor-adapter"
 version = "0.27.0"
 description = "Hermes-compatible executor adapter for a standalone Polymarket execution engine"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 dependencies = [
   "httpx>=0.28.1",
   "pydantic>=2.13.3",

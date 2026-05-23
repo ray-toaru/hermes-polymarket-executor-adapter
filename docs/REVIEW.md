@@ -16,8 +16,9 @@
 - Client is still handwritten. Static parity checks reduce drift but do not eliminate it.
 - Runtime HTTP behavior depends on Rust executor tests and current evidence from
   the pinned execution-engine submodule.
-- Plugin tests use local fake contexts; full Hermes runtime validation is still
-  required before a suite release.
+- Plugin tests use local fake contexts. The local `hm-pdp-test` profile now also
+  validates runtime entry-point discovery and toolset visibility, but full
+  end-to-end executor calls still require a running executor API.
 
 ## Next step
 
