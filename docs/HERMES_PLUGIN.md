@@ -12,18 +12,18 @@ database writer, or risk-policy owner.
 Install this package into the same Python environment that runs Hermes:
 
 ```bash
-uv pip install --python /home/vscode/.hermes/hermes-agent/venv/bin/python -e .
+uv pip install --python "$HERMES_RUNTIME_PYTHON" -e .
 ```
 
 The current Hermes CLI discovers pip entry-point plugins at runtime, but
 `hermes plugins enable` only enables directory-managed plugins. For a local
 profile, enable this entry-point plugin by adding `polymarket-executor` to the
-profile's `plugins.enabled` allow-list. The `hm-pdp-test` profile can then be
-checked from the integration repository root:
+profile's `plugins.enabled` allow-list. A local profile can then be checked
+from the integration repository root:
 
 ```bash
-python scripts/check_hermes_profile_plugin.py --profile-cmd hm-pdp-test
-hm-pdp-test tools list --platform cli
+python scripts/check_hermes_profile_plugin.py --profile-cmd "$HERMES_PROFILE_CMD"
+"$HERMES_PROFILE_CMD" tools list --platform cli
 ```
 
 Set runtime configuration:
@@ -84,8 +84,8 @@ PYTHONPATH=src python -m compileall -q src tests
 Hermes runtime validation before suite release:
 
 ```bash
-python scripts/check_hermes_profile_plugin.py --profile-cmd hm-pdp-test
-hm-pdp-test tools list --platform cli
+python scripts/check_hermes_profile_plugin.py --profile-cmd "$HERMES_PROFILE_CMD"
+"$HERMES_PROFILE_CMD" tools list --platform cli
 ```
 
 Confirm that `polymarket_executor` and `polymarket_executor_admin` appear only
