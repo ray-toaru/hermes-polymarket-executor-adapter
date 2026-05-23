@@ -11,13 +11,17 @@ keys, CLOB API secrets, raw signed payloads, or executor database credentials.
 It must not sign, submit live orders, cancel live orders, call CLOB directly, or
 own executor risk policy.
 
-## v0.26 status
+## v0.27 development status
 
 - Pydantic models aligned with OpenAPI public schemas.
 - Canonical decimal validation aligned with executor source.
 - Service/admin token client separation.
 - Admin helpers for kill switch, cancel, and reconcile.
 - Safe canary report helpers that do not authorize live trading.
+- Hermes executor adapter naming and package metadata are aligned with the
+  repository responsibility boundary.
+- Boundary remains no signing, no direct CLOB, no executor database credentials,
+  and no release/canary governance ownership.
 - Tests pass in this environment.
 
 ## Run tests

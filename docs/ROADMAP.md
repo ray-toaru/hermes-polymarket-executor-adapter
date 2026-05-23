@@ -1,17 +1,27 @@
-# Executor Adapter Roadmap
+# Hermes Executor Adapter Roadmap
 
-## v0.2
+## Current Role
 
-- Typed models.
-- Typed executor client.
-- Basic tests.
-- Boundary docs.
+This repository is the Hermes executor adapter for the standalone Polymarket
+execution engine. It owns typed executor API access, Pydantic public models,
+safe report rendering, and service/admin token separation.
 
-## Next
+It does not own trading strategy, execution-engine risk policy, release/canary
+governance, signing, direct CLOB access, or executor database credentials.
 
-- Generate client from OpenAPI or add schema parity tests.
-- Add Hermes tool wrappers.
-- Add approval workflow object model.
-- Add audit report renderer.
-- Add operator command UX for admin actions.
-- Add no-secret static checks.
+## v0.27 Development Status
+
+- Package metadata and docs use `hermes-polymarket-executor-adapter`.
+- Models and client helpers align with the executor OpenAPI contract through
+  integration-repository parity checks.
+- Canary readiness reporting remains reference-only and blocked unless a
+  reviewed executor release decision and approval exist.
+- Admin helpers call executor API endpoints only; they do not perform direct
+  Polymarket operations.
+
+## Remaining Before a v0.27 Suite Release
+
+1. Keep model/client parity green against the execution-engine OpenAPI schema.
+2. Keep no-secret and no-signing tests green under the integration repository.
+3. Update supported executor contract notes if the execution-engine API changes
+   before the v0.27 suite release.
