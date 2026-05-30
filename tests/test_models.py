@@ -107,10 +107,10 @@ def test_sign_only_lifecycle_record_validates_boundary():
         state="SIGNED_DRY_RUN",
         event="SIGNED_WITHOUT_POST",
         client_event_id="evt-1",
-        signed_order_ref="sign-only:redacted-ref",
+        signed_order_ref=SIGN_ONLY_REF_1,
         no_remote_side_effect=True,
     )
-    assert ok.signed_order_ref == "sign-only:redacted-ref"
+    assert ok.signed_order_ref == SIGN_ONLY_REF_1
 
     import pytest
     with pytest.raises(ValueError):
@@ -130,6 +130,24 @@ def test_sign_only_lifecycle_record_validates_boundary():
             state="RESERVATION_PREPARED",
             event="PREPARE_RESERVATION",
             signed_order_ref="forbidden-ref",
+            no_remote_side_effect=True,
+        )
+    with pytest.raises(ValueError):
+        SignOnlyLifecycleRecord(
+            execution_id="exec-1",
+            account_id="acct",
+            state="SIGNED_DRY_RUN",
+            event="SIGNED_WITHOUT_POST",
+            signed_order_ref="sign-only:redacted-ref",
+            no_remote_side_effect=True,
+        )
+    with pytest.raises(ValueError):
+        SignOnlyLifecycleRecord(
+            execution_id="exec-1",
+            account_id="acct",
+            state="SIGNED_DRY_RUN",
+            event="SIGNED_WITHOUT_POST",
+            signed_order_ref=f"sign-only:exec-2:{HASH_1}:{DIGEST_1}",
             no_remote_side_effect=True,
         )
 

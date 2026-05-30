@@ -375,6 +375,12 @@ class SignOnlyLifecycleRecord(FrozenModel):
         if self.state == "SIGNED_DRY_RUN":
             if not self.signed_order_ref or not self.signed_order_ref.strip():
                 raise ValueError("SIGNED_DRY_RUN requires signed_order_ref")
+            ref_execution_id, _, _ = _parse_sign_only_ref(
+                self.signed_order_ref,
+                field="signed_order_ref",
+            )
+            if ref_execution_id != self.execution_id:
+                raise ValueError("signed_order_ref execution_id must match execution_id")
         elif self.signed_order_ref is not None:
             raise ValueError("signed_order_ref is only allowed for SIGNED_DRY_RUN")
         return self
