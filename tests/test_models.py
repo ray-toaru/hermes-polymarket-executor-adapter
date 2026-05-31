@@ -326,10 +326,11 @@ def test_canary_readiness_report_is_reference_only_and_blocked():
         operator_identity_ref="operator-ref",
     )
     report = build_canary_readiness_report(evidence, approval=approval)
-    assert report.status == "BLOCKED"
+    assert report.status == "REVIEW_PACKAGE_ONLY"
     assert report.live_submit_allowed is False
     assert report.remote_side_effects is False
     assert report.secrets_included is False
+    assert report.blocked_reasons == []
 
     with pytest.raises(ValidationError):
         CanaryReadinessReport(

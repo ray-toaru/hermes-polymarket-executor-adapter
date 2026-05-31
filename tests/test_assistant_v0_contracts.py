@@ -4,6 +4,7 @@ import pytest
 
 from hermes_polymarket_executor_adapter.assistant_v0_contracts import (
     ADAPTER_REQUIRED_TOOLS,
+    ASSISTANT_LOCAL_TOOLS_NOT_REQUIRED_FROM_ADAPTER,
     DRY_RUN_FIXED_EXECUTOR_MODE,
     FORBIDDEN_TOOL_NAMES,
     SAFE_SESSION_TOOLS,
@@ -20,6 +21,8 @@ def test_assistant_v0_contract_keeps_adapter_surface_narrow():
         "get_execution_status",
     }
     assert ADAPTER_REQUIRED_TOOLS.issubset(SAFE_SESSION_TOOLS)
+    assert "search_trade_expressions" in SAFE_SESSION_TOOLS
+    assert "search_trade_expressions" in ASSISTANT_LOCAL_TOOLS_NOT_REQUIRED_FROM_ADAPTER
     assert "approve_trade_plan" not in SAFE_SESSION_TOOLS
     assert "approve_trade_plan" in FORBIDDEN_TOOL_NAMES
 

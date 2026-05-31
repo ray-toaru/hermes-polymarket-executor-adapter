@@ -5,7 +5,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from .assistant_v0_contracts import DRY_RUN_FIXED_EXECUTOR_MODE
+from .assistant_v0_contracts import DRY_RUN_FIXED_EXECUTOR_MODE, SAFE_SESSION_TOOLS
+
+
+ASSISTANT_V0_CONTRACT_VERSION = "assistant-v0"
+ASSISTANT_V0_TARGET_COMPONENT = "hermes-polymarket-executor-adapter"
 
 
 class AssistantV0ContractLoadError(ValueError):
@@ -37,10 +41,18 @@ def load_assistant_v0_contracts(
 
     safe_session_tools = _sorted_tuple(conformance.get("safe_session_tools"))
     adapter_required_tools = _sorted_tuple(conformance.get("adapter_required_tools"))
-    if manifest_tools != safe_session_tools:
+    if safe_session_tools != tuple(sorted(SAFE_SESSION_TOOLS)):
         raise AssistantV0ContractLoadError("safe_tool_mismatch")
+    if manifest_tools != adapter_required_tools:
+        raise AssistantV0ContractLoadError("adapter_required_tool_mismatch")
     if not set(adapter_required_tools).issubset(set(safe_session_tools)):
         raise AssistantV0ContractLoadError("adapter_required_tool_mismatch")
+    contract_version = conformance.get("contract_version")
+    if contract_version != ASSISTANT_V0_CONTRACT_VERSION:
+        raise AssistantV0ContractLoadError("contract_version_mismatch")
+    target_component = conformance.get("target_component")
+    if target_component != ASSISTANT_V0_TARGET_COMPONENT:
+        raise AssistantV0ContractLoadError("target_component_mismatch")
 
     dry_run_tool = _tool_by_name(manifest, "dry_run_trade_plan")
     mode_contract = conformance.get("dry_run_executor_mode_contract")
@@ -57,7 +69,7 @@ def load_assistant_v0_contracts(
         raise AssistantV0ContractLoadError("dry_run_mode_override_allowed")
 
     return AssistantV0Contracts(
-        contract_version=str(conformance.get("contract_version") or ""),
+        contract_version=ASSISTANT_V0_CONTRACT_VERSION,
         safe_session_tools=safe_session_tools,
         adapter_required_tools=adapter_required_tools,
         dry_run_fixed_executor_mode=DRY_RUN_FIXED_EXECUTOR_MODE,
@@ -65,7 +77,7 @@ def load_assistant_v0_contracts(
             "adapter_required_tool_count": len(adapter_required_tools),
             "forbidden_tool_count": len(forbidden),
             "safe_tool_count": len(safe_session_tools),
-            "target_component": conformance.get("target_component"),
+            "target_component": ASSISTANT_V0_TARGET_COMPONENT,
         },
     )
 

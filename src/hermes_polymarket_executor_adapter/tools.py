@@ -38,9 +38,11 @@ def build_canary_readiness_report(
     Hermes does not sign, post, cancel, hold executor DB credentials, or call CLOB.
     """
 
-    reasons = blocked_reasons or ["reviewed release decision and armed approval are absent"]
+    reasons = blocked_reasons or []
+    if approval is None and not reasons:
+        reasons = ["reviewed release decision and armed approval are absent"]
     return CanaryReadinessReport(
-        status="BLOCKED",
+        status="REVIEW_PACKAGE_ONLY" if approval is not None and not reasons else "BLOCKED",
         evidence=evidence,
         approval=approval,
         blocked_reasons=reasons,

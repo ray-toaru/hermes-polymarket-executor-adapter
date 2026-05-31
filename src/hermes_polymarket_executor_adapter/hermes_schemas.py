@@ -1,5 +1,15 @@
 from __future__ import annotations
 
+from .models import (
+    ApprovalReceipt,
+    CanaryApprovalReference,
+    CanaryEvidenceReference,
+    ConstraintDecision,
+    FeasibilitySnapshot,
+    NormalizedIntent,
+    TradeIntent,
+)
+
 
 def _object_schema(description: str, properties: dict, required: list[str] | None = None) -> dict:
     return {
@@ -11,6 +21,12 @@ def _object_schema(description: str, properties: dict, required: list[str] | Non
             "additionalProperties": False,
         },
     }
+
+
+def _model_property_schema(model, description: str) -> dict:
+    schema = model.model_json_schema()
+    schema["description"] = description
+    return schema
 
 
 CORRELATION_ID = {
@@ -27,10 +43,10 @@ EXECUTOR_HEALTH_SCHEMA = _object_schema(
 NORMALIZE_INTENT_SCHEMA = _object_schema(
     "Normalize a TradeIntent through the executor service API.",
     {
-        "intent": {
-            "type": "object",
-            "description": "TradeIntent payload matching the executor public schema.",
-        }
+        "intent": _model_property_schema(
+            TradeIntent,
+            "TradeIntent payload matching the executor public schema.",
+        )
     },
     ["intent"],
 )
@@ -38,10 +54,10 @@ NORMALIZE_INTENT_SCHEMA = _object_schema(
 CAPTURE_SNAPSHOT_SCHEMA = _object_schema(
     "Capture a feasibility snapshot for a normalized intent.",
     {
-        "normalized": {
-            "type": "object",
-            "description": "NormalizedIntent payload returned by polymarket_normalize_intent.",
-        }
+        "normalized": _model_property_schema(
+            NormalizedIntent,
+            "NormalizedIntent payload returned by polymarket_normalize_intent.",
+        )
     },
     ["normalized"],
 )
@@ -49,8 +65,12 @@ CAPTURE_SNAPSHOT_SCHEMA = _object_schema(
 EVALUATE_DECISION_SCHEMA = _object_schema(
     "Evaluate executor constraints for a normalized intent and feasibility snapshot.",
     {
-        "normalized": {"type": "object", "description": "NormalizedIntent payload."},
-        "snapshot": {"type": "object", "description": "FeasibilitySnapshot payload."},
+        "normalized": _model_property_schema(
+            NormalizedIntent, "NormalizedIntent payload."
+        ),
+        "snapshot": _model_property_schema(
+            FeasibilitySnapshot, "FeasibilitySnapshot payload."
+        ),
     },
     ["normalized", "snapshot"],
 )
@@ -58,10 +78,18 @@ EVALUATE_DECISION_SCHEMA = _object_schema(
 COMPILE_PLAN_SCHEMA = _object_schema(
     "Compile an executor plan summary after explicit approval.",
     {
-        "normalized": {"type": "object", "description": "NormalizedIntent payload."},
-        "snapshot": {"type": "object", "description": "FeasibilitySnapshot payload."},
-        "decision": {"type": "object", "description": "ConstraintDecision payload."},
-        "approval": {"type": "object", "description": "ApprovalReceipt payload."},
+        "normalized": _model_property_schema(
+            NormalizedIntent, "NormalizedIntent payload."
+        ),
+        "snapshot": _model_property_schema(
+            FeasibilitySnapshot, "FeasibilitySnapshot payload."
+        ),
+        "decision": _model_property_schema(
+            ConstraintDecision, "ConstraintDecision payload."
+        ),
+        "approval": _model_property_schema(
+            ApprovalReceipt, "ApprovalReceipt payload."
+        ),
     },
     ["normalized", "snapshot", "decision", "approval"],
 )
@@ -69,14 +97,14 @@ COMPILE_PLAN_SCHEMA = _object_schema(
 PREPARE_EXECUTION_PLAN_SCHEMA = _object_schema(
     "Run the safe executor preparation sequence: normalize, snapshot, evaluate, compile. It does not submit.",
     {
-        "intent": {
-            "type": "object",
-            "description": "TradeIntent payload matching the executor public schema.",
-        },
-        "approval": {
-            "type": "object",
-            "description": "ApprovalReceipt payload required before plan compilation.",
-        },
+        "intent": _model_property_schema(
+            TradeIntent,
+            "TradeIntent payload matching the executor public schema.",
+        ),
+        "approval": _model_property_schema(
+            ApprovalReceipt,
+            "ApprovalReceipt payload required before plan compilation.",
+        ),
     },
     ["intent", "approval"],
 )
@@ -103,8 +131,12 @@ LIST_EXECUTION_LIFECYCLE_EVENTS_SCHEMA = _object_schema(
 CANARY_REPORT_SCHEMA = _object_schema(
     "Build a local reference-only canary readiness report. This never authorizes live submit.",
     {
-        "evidence": {"type": "object", "description": "CanaryEvidenceReference payload."},
-        "approval": {"type": "object", "description": "Optional CanaryApprovalReference payload."},
+        "evidence": _model_property_schema(
+            CanaryEvidenceReference, "CanaryEvidenceReference payload."
+        ),
+        "approval": _model_property_schema(
+            CanaryApprovalReference, "Optional CanaryApprovalReference payload."
+        ),
         "blocked_reasons": {
             "type": "array",
             "items": {"type": "string"},

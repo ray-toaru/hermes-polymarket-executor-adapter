@@ -9,6 +9,10 @@ from .assistant_v0_contracts import (
     ADAPTER_REQUIRED_TOOLS,
     ASSISTANT_LOCAL_TOOLS_NOT_REQUIRED_FROM_ADAPTER,
     DRY_RUN_FIXED_EXECUTOR_MODE,
+    DryRunTradePlanRequest,
+    GetExecutionStatusRequest,
+    RecordOperatorReviewReferenceRequest,
+    RiskReviewTradePlanRequest,
     assistant_v0_executor_mode_for,
     validate_assistant_v0_tool_request,
 )
@@ -176,16 +180,10 @@ def _now_utc() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def _object_schema(description: str, properties: dict[str, Any], required: list[str]) -> dict[str, Any]:
-    return {
-        "description": description,
-        "parameters": {
-            "type": "object",
-            "properties": properties,
-            "required": required,
-            "additionalProperties": False,
-        },
-    }
+def _request_schema(model: Any, description: str) -> dict[str, Any]:
+    schema = model.model_json_schema()
+    schema["description"] = description
+    return {"description": description, "parameters": schema}
 
 
 _DESCRIPTIONS = {
@@ -198,35 +196,17 @@ _DESCRIPTIONS = {
 }
 
 _ASSISTANT_V0_SCHEMAS = {
-    "risk_review_trade_plan": _object_schema(
+    "risk_review_trade_plan": _request_schema(
+        RiskReviewTradePlanRequest,
         _DESCRIPTIONS["risk_review_trade_plan"],
-        {
-            "plan_id": {"type": "string", "minLength": 1},
-            "policy_profile": {
-                "type": "string",
-                "enum": ["dry_run_default", "dry_run_strict"],
-                "default": "dry_run_default",
-            },
-        },
-        ["plan_id"],
     ),
-    "dry_run_trade_plan": _object_schema(
+    "dry_run_trade_plan": _request_schema(
+        DryRunTradePlanRequest,
         _DESCRIPTIONS["dry_run_trade_plan"],
-        {
-            "plan_id": {"type": "string", "minLength": 1},
-            "review_reference_id": {"type": "string", "minLength": 1},
-            "idempotency_key": {"type": "string", "minLength": 1},
-        },
-        ["plan_id", "review_reference_id", "idempotency_key"],
     ),
-    "get_execution_status": _object_schema(
+    "get_execution_status": _request_schema(
+        GetExecutionStatusRequest,
         _DESCRIPTIONS["get_execution_status"],
-        {
-            "plan_id": {"type": "string", "minLength": 1},
-            "execution_id": {"type": ["string", "null"]},
-            "order_id": {"type": ["string", "null"]},
-        },
-        ["plan_id"],
     ),
 }
 

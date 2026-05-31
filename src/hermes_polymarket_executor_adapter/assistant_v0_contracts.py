@@ -34,6 +34,7 @@ ADAPTER_REQUIRED_TOOLS = frozenset(
 ASSISTANT_LOCAL_TOOLS_NOT_REQUIRED_FROM_ADAPTER = frozenset(
     {
         "create_user_thesis",
+        "search_trade_expressions",
         "compare_trade_expressions",
         "draft_trade_plan",
         "record_operator_review_reference",

@@ -291,12 +291,18 @@ def test_canary_report_handler_is_reference_only():
                     "manifest_path": "polymarket-execution-engine/evidence/current/manifest.json",
                     "release_status": "shadow-ready SDK sign-only candidate",
                 },
-                "blocked_reasons": ["release decision is not reviewed"],
+                "approval": {
+                    "approval_id": "approval-1",
+                    "approval_hash": "c" * 64,
+                    "scope": "REAL_FUNDS_CANARY",
+                    "expires_at": "2099-01-01T00:00:00Z",
+                    "operator_identity_ref": "operator-ref",
+                },
             }
         )
     )
 
-    assert payload["status"] == "BLOCKED"
+    assert payload["status"] == "REVIEW_PACKAGE_ONLY"
     assert payload["live_submit_allowed"] is False
     assert payload["remote_side_effects"] is False
     assert payload["secrets_included"] is False

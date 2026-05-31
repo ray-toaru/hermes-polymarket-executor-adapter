@@ -32,9 +32,16 @@ def _conformance():
         "contract_version": "assistant-v0",
         "target_component": "hermes-polymarket-executor-adapter",
         "safe_session_tools": [
+            "create_user_thesis",
+            "search_trade_expressions",
+            "compare_trade_expressions",
+            "draft_trade_plan",
+            "record_operator_review_reference",
             "risk_review_trade_plan",
             "dry_run_trade_plan",
             "get_execution_status",
+            "mark_dry_run_report_cancelled",
+            "review_trade_outcome",
         ],
         "adapter_required_tools": [
             "risk_review_trade_plan",
@@ -64,9 +71,16 @@ def test_manifest_loader_returns_immutable_contracts_and_diagnostics(tmp_path):
 
     assert contracts.contract_version == "assistant-v0"
     assert contracts.safe_session_tools == (
+        "compare_trade_expressions",
+        "create_user_thesis",
+        "draft_trade_plan",
         "dry_run_trade_plan",
         "get_execution_status",
+        "mark_dry_run_report_cancelled",
+        "record_operator_review_reference",
+        "review_trade_outcome",
         "risk_review_trade_plan",
+        "search_trade_expressions",
     )
     assert contracts.adapter_required_tools == (
         "dry_run_trade_plan",
@@ -77,7 +91,7 @@ def test_manifest_loader_returns_immutable_contracts_and_diagnostics(tmp_path):
     assert contracts.diagnostics == {
         "adapter_required_tool_count": 3,
         "forbidden_tool_count": 3,
-        "safe_tool_count": 3,
+        "safe_tool_count": 10,
         "target_component": "hermes-polymarket-executor-adapter",
     }
 
@@ -109,6 +123,14 @@ def test_manifest_loader_returns_immutable_contracts_and_diagnostics(tmp_path):
                 {"allow_mode_override": True}
             ),
             "dry_run_mode_override_allowed",
+        ),
+        (
+            lambda manifest, conformance: conformance.update({"contract_version": ""}),
+            "contract_version_mismatch",
+        ),
+        (
+            lambda manifest, conformance: conformance.update({"target_component": ""}),
+            "target_component_mismatch",
         ),
     ],
 )
