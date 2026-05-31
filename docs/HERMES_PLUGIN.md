@@ -15,6 +15,12 @@ Install this package into the same Python environment that runs Hermes:
 uv pip install --python "$HERMES_RUNTIME_PYTHON" -e .
 ```
 
+For reproducible local development outside the Hermes runtime, prefer:
+
+```bash
+python -m pip install -c constraints-ci.txt -e ".[test]"
+```
+
 The current Hermes CLI discovers pip entry-point plugins at runtime, but
 `hermes plugins enable` only enables directory-managed plugins. For a local
 profile, enable this entry-point plugin by adding `polymarket-executor` to the

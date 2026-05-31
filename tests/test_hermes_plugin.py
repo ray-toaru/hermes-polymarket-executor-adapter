@@ -19,9 +19,18 @@ def test_pyproject_exposes_hermes_plugin_entrypoint():
         project = tomllib.load(fh)
 
     assert project["project"]["requires-python"] == ">=3.11"
+    assert project["project"]["dependencies"] == [
+        "httpx==0.28.1",
+        "pydantic==2.13.4",
+    ]
+    assert project["project"]["optional-dependencies"]["test"] == ["pytest==9.0.3"]
     assert (
         project["project"]["entry-points"]["hermes_agent.plugins"]["polymarket-executor"]
         == "hermes_polymarket_executor_adapter.hermes_plugin"
+    )
+    assert (
+        project["project"]["scripts"]["pmx-executor-adapter"]
+        == "hermes_polymarket_executor_adapter.cli:main"
     )
 
 

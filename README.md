@@ -38,7 +38,7 @@ own executor risk policy.
 Install the adapter into the Hermes Python environment:
 
 ```bash
-python -m pip install -e .
+python -m pip install -c constraints-ci.txt -e .
 ```
 
 Then add `polymarket-executor` to the active Hermes profile's
@@ -70,6 +70,7 @@ adapter does not permit live submit mode.
 ```bash
 PYTHONPATH=src python -m pytest -q
 PYTHONPATH=src python -m compileall -q src tests
+pmx-executor-adapter --help
 ```
 
 Cross-repository OpenAPI parity is validated from the integration repository that checks out this
