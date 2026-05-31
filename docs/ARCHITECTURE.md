@@ -71,4 +71,5 @@ authority.
 
 This adapter may version independently from the execution engine after v0.26. A
 suite release pins a tested adapter commit and execution-engine commit. The
-adapter must document which executor API contract versions it supports.
+adapter must document which executor API contract versions it supports. The
+current adapter-local contract matrix lives in `docs/COMPONENT_COMPATIBILITY.md`.

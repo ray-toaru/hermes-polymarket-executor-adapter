@@ -6,8 +6,9 @@ import tomllib
 
 
 class FakeContext:
-    def __init__(self) -> None:
+    def __init__(self, assistant_v0_handlers=None) -> None:
         self.tools: dict[str, dict] = {}
+        self.assistant_v0_handlers = assistant_v0_handlers
 
     def register_tool(self, **kwargs):
         self.tools[kwargs["name"]] = kwargs
@@ -71,6 +72,55 @@ def test_registers_service_and_admin_tools():
     assert not (forbidden & set(ctx.tools))
     assert "polymarket_prepare_execution_plan" in ctx.tools
     assert "polymarket_submit_plan" not in ctx.tools
+
+
+def test_register_uses_injected_assistant_v0_handlers():
+    from hermes_polymarket_executor_adapter.hermes_plugin import register
+
+    calls = []
+
+    def dry_run_handler(payload):
+        calls.append(payload)
+        return {
+            "ok": True,
+            "tool_name": "dry_run_trade_plan",
+            "kind": "DryRunResult",
+            "executor_called": True,
+            "submitted_live": False,
+            "payload": {"status": "READY"},
+        }
+
+    ctx = FakeContext(assistant_v0_handlers={"dry_run_trade_plan": dry_run_handler})
+    register(ctx)
+    payload = json.loads(
+        ctx.tools["dry_run_trade_plan"]["handler"](
+            {
+                "plan_id": "plan-fixture-001",
+                "review_reference_id": "review-reference-fixture-001",
+                "idempotency_key": "dry-run-fixture-001",
+            }
+        )
+    )
+
+    assert calls == [
+        {
+            "plan_id": "plan-fixture-001",
+            "review_reference_id": "review-reference-fixture-001",
+            "idempotency_key": "dry-run-fixture-001",
+        }
+    ]
+    assert payload["executor_called"] is True
+    assert payload["payload"]["status"] == "READY"
+
+
+def test_component_compatibility_doc_records_executor_contract():
+    compatibility_path = Path(__file__).resolve().parents[1] / "docs" / "COMPONENT_COMPATIBILITY.md"
+    text = compatibility_path.read_text(encoding="utf-8")
+
+    assert "Executor HTTP contract" in text
+    assert "`executor.v1`" in text
+    assert "`assistant-v0`" in text
+    assert "`polymarket-executor`" in text
 
 
 def test_service_availability_requires_service_token(monkeypatch):

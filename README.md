@@ -75,6 +75,8 @@ pmx-executor-adapter --help
 
 Cross-repository OpenAPI parity is validated from the integration repository that checks out this
 repo alongside `polymarket-execution-engine`.
+Adapter-local contract compatibility is tracked in
+`docs/COMPONENT_COMPATIBILITY.md`.
 
 ## Integration roadmap
 

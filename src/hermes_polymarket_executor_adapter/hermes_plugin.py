@@ -10,7 +10,8 @@ ADMIN_ENV = ["PM_EXEC_SERVICE_TOKEN", "PM_EXEC_ADMIN_TOKEN"]
 
 
 def register(ctx) -> None:
-    for spec in assistant_v0_facade.build_assistant_v0_tool_specs():
+    assistant_handlers = getattr(ctx, "assistant_v0_handlers", None)
+    for spec in assistant_v0_facade.build_assistant_v0_tool_specs(assistant_handlers):
         _register_assistant_v0_tool(ctx, spec)
 
     _register_service_tool(

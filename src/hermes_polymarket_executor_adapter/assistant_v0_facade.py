@@ -81,12 +81,15 @@ class AssistantV0Facade:
         return handler(payload)
 
 
-def build_assistant_v0_tool_specs() -> tuple[AssistantV0ToolSpec, ...]:
+def build_assistant_v0_tool_specs(
+    handlers: dict[str, Callable[[dict[str, Any]], dict[str, Any]]] | None = None,
+) -> tuple[AssistantV0ToolSpec, ...]:
+    facade = AssistantV0Facade(handlers=handlers)
     specs = tuple(
         AssistantV0ToolSpec(
             name=name,
             schema=_ASSISTANT_V0_SCHEMAS[name],
-            handler=_HANDLERS[name],
+            handler=_bound_handler(facade, name),
             description=_DESCRIPTIONS[name],
         )
         for name in sorted(ADAPTER_REQUIRED_TOOLS)
@@ -96,6 +99,13 @@ def build_assistant_v0_tool_specs() -> tuple[AssistantV0ToolSpec, ...]:
         _assistant_v0_conformance(),
     )
     return specs
+
+
+def _bound_handler(facade: AssistantV0Facade, tool_name: str) -> Callable[..., str]:
+    def handler(args: dict | None = None, **_kwargs) -> str:
+        return _json_result(facade.dispatch(tool_name, args or {}))
+
+    return handler
 
 
 def handle_risk_review_trade_plan(args: dict, **_kwargs) -> str:
@@ -261,10 +271,4 @@ _ASSISTANT_V0_SCHEMAS = {
         GetExecutionStatusRequest,
         _DESCRIPTIONS["get_execution_status"],
     ),
-}
-
-_HANDLERS = {
-    "risk_review_trade_plan": handle_risk_review_trade_plan,
-    "dry_run_trade_plan": handle_dry_run_trade_plan,
-    "get_execution_status": handle_get_execution_status,
 }

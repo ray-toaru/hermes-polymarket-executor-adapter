@@ -22,8 +22,9 @@
 
 - Re-run adapter tests from the integration repository after any executor API
   schema change.
-- Keep package/version compatibility recorded in the integration repository
-  compatibility documents, not as an independent local truth source here.
+- Keep adapter-local contract compatibility recorded in
+  `docs/COMPONENT_COMPATIBILITY.md`, and keep suite release compatibility pinned
+  in the integration repository release documents.
 - Preserve the adapter as a Hermes executor adapter only; execution authority
   remains in `polymarket-execution-engine`.
 - Replace the current local profile install procedure with a packaged Hermes
