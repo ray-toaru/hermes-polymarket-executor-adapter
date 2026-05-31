@@ -300,3 +300,32 @@ def test_canary_report_handler_is_reference_only():
     assert payload["live_submit_allowed"] is False
     assert payload["remote_side_effects"] is False
     assert payload["secrets_included"] is False
+
+
+def test_health_handler_redacts_raw_executor_http_error(monkeypatch):
+    from hermes_polymarket_executor_adapter import hermes_handlers
+    from hermes_polymarket_executor_adapter.client import ExecutorHttpError
+
+    class FakeClient:
+        def __init__(self, config):
+            self.config = config
+
+        def health(self):
+            raise ExecutorHttpError(
+                status_code=409,
+                code="conflict",
+                correlation_id="corr-err",
+                message="executor request failed with status 409 code=conflict correlation_id=corr-err",
+            )
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(hermes_handlers.ExecutorConfig, "from_env", classmethod(lambda cls: "cfg"))
+    monkeypatch.setattr(hermes_handlers, "ExecutorClient", FakeClient)
+
+    payload = json.loads(hermes_handlers.handle_executor_health({}))
+    assert payload["status_code"] == 409
+    assert payload["code"] == "conflict"
+    assert payload["correlation_id"] == "corr-err"
+    assert "plan hash mismatch" not in payload["error"]

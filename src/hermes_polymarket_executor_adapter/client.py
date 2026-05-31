@@ -43,6 +43,20 @@ class ExecutorHttpError(RuntimeError):
         self.correlation_id = correlation_id
 
 
+def _safe_executor_error_message(
+    *,
+    status_code: int,
+    code: str | None,
+    correlation_id: str | None,
+) -> str:
+    parts = [f"executor request failed with status {status_code}"]
+    if code:
+        parts.append(f"code={code}")
+    if correlation_id:
+        parts.append(f"correlation_id={correlation_id}")
+    return " ".join(parts)
+
+
 class ExecutorClient:
     """Typed client for the standalone execution engine.
 
@@ -120,7 +134,6 @@ class ExecutorClient:
             return
         code = None
         correlation_id = None
-        message = response.text
         try:
             payload = response.json()
         except ValueError:
@@ -130,15 +143,15 @@ class ExecutorClient:
                 code = str(payload["code"])
             if payload.get("correlation_id") is not None:
                 correlation_id = str(payload["correlation_id"])
-            if payload.get("message") is not None:
-                message = str(payload["message"])
-            elif payload.get("error") is not None:
-                message = str(payload["error"])
         raise ExecutorHttpError(
             status_code=response.status_code,
             code=code,
             correlation_id=correlation_id,
-            message=message,
+            message=_safe_executor_error_message(
+                status_code=response.status_code,
+                code=code,
+                correlation_id=correlation_id,
+            ),
         )
 
     def health(self) -> HealthReport:

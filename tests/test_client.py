@@ -65,7 +65,9 @@ def test_executor_error_preserves_envelope(monkeypatch):
     assert raised.value.status_code == 409
     assert raised.value.code == "conflict"
     assert raised.value.correlation_id == "corr-err"
-    assert "plan hash mismatch" in str(raised.value)
+    assert "status 409" in str(raised.value)
+    assert "code=conflict" in str(raised.value)
+    assert "corr-err" in str(raised.value)
     client.close()
 
 

@@ -6,7 +6,7 @@ from typing import Any, Callable
 
 from pydantic import ValidationError
 
-from .client import ExecutorClient
+from .client import ExecutorClient, ExecutorHttpError
 from .config import ExecutorConfig
 from .models import (
     ApprovalReceipt,
@@ -46,6 +46,13 @@ def _with_client(fn: Callable[[ExecutorClient], Any]) -> str:
     client = ExecutorClient(ExecutorConfig.from_env())
     try:
         return _result(fn(client))
+    except ExecutorHttpError as exc:
+        payload = {"error": str(exc), "status_code": exc.status_code}
+        if exc.code is not None:
+            payload["code"] = exc.code
+        if exc.correlation_id is not None:
+            payload["correlation_id"] = exc.correlation_id
+        return _result(payload)
     except (PermissionError, RuntimeError, ValidationError, ValueError) as exc:
         return _error(str(exc))
     finally:

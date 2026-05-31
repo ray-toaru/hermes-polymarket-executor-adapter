@@ -4,14 +4,19 @@ import pytest
 from pydantic import ValidationError
 
 from hermes_polymarket_executor_adapter.models import (
+    ApprovalReceipt,
     CanaryApprovalReference,
     CanaryEvidenceReference,
     CanaryReadinessReport,
+    ExecutionPlanSummary,
     ExecutionLifecycleEvent,
     MarketRef,
+    NormalizedIntent,
+    QuantityBound,
     OrderLifecycleDivergence,
     QuantityIntent,
     RedactedPayloadEnvelope,
+    ReconcileReport,
     ReconcileOrderLocalResponse,
     Side,
     SignOnlyLifecycleRecord,
@@ -53,6 +58,22 @@ def test_trade_intent_limit_price_bounds():
                 quantity=QuantityIntent(max_notional="10"),
                 limit_price=bad,
             )
+
+
+def test_quantity_bound_and_normalized_intent_validate_canonical_decimals():
+    with pytest.raises(ValidationError):
+        QuantityBound(kind="WORST_CASE_QUOTE_NOTIONAL", amount="0")
+    with pytest.raises(ValidationError):
+        NormalizedIntent(
+            normalized_intent_id="n1",
+            intent_hash=HASH_1,
+            account_id="acct",
+            market=MarketRef(condition_id="c1"),
+            token_id="tok",
+            side=Side.BUY,
+            quantity_bound=QuantityBound(kind="WORST_CASE_QUOTE_NOTIONAL", amount="10"),
+            limit_price="1.5",
+        )
 
 
 def test_trade_intent_rejects_extra_fields():
@@ -246,6 +267,14 @@ def test_execution_lifecycle_payload_requires_redacted_envelope():
             redacted_fields=[],
             body={},
         )
+    with pytest.raises(ValidationError):
+        RedactedPayloadEnvelope(
+            schema_version=1,
+            kind="bad",
+            correlation_id=None,
+            redacted_fields=[],
+            body={"private_key": "secret"},
+        )
 
 
 def test_reconcile_order_local_response_validates_local_only_boundary():
@@ -311,3 +340,68 @@ def test_canary_readiness_report_is_reference_only_and_blocked():
             remote_side_effects=False,
             secrets_included=False,
         )
+    with pytest.raises(ValidationError):
+        CanaryReadinessReport(
+            status="DRY_RUN_READY",
+            evidence=evidence,
+            approval=None,
+            blocked_reasons=[],
+            live_submit_allowed=False,
+            remote_side_effects=False,
+            secrets_included=False,
+        )
+
+
+def test_approval_receipt_and_canary_approval_require_future_expiry():
+    with pytest.raises(ValidationError):
+        ApprovalReceipt(
+            approval_id="approval-1",
+            approved_by="operator",
+            approved_at="2099-01-01T00:00:00Z",
+            expires_at="2099-01-02T00:00:00Z",
+            approval_scope="CONTROLLED_CANARY",
+            approval_hash=HASH_1,
+            bound_artifact_sha256=HASH_1,
+            bound_evidence_manifest_sha256=HASH_1,
+            bound_snapshot_hash=HASH_1,
+            bound_decision_hash=HASH_1,
+            bound_plan_hash=HASH_1,
+            operator_identity_ref="operator-ref",
+        )
+    with pytest.raises(ValidationError):
+        CanaryApprovalReference(
+            approval_id="approval-1",
+            approval_hash=HASH_1,
+            scope="REAL_FUNDS_CANARY",
+            expires_at="2000-01-01T00:00:00Z",
+            operator_identity_ref="operator-ref",
+        )
+
+
+def test_execution_plan_summary_and_reconcile_report_enforce_bounds():
+    with pytest.raises(ValidationError):
+        ExecutionPlanSummary(
+            execution_id="exec-1",
+            account_id="acct",
+            normalized_intent_id="norm-1",
+            snapshot_id="snap-1",
+            snapshot_hash=HASH_1,
+            decision_id="dec-1",
+            decision_hash=HASH_1,
+            approval_id="approval-1",
+            approval_hash=HASH_1,
+            plan_hash=HASH_1,
+            status="BLOCKED",
+            condition_id="cond",
+            token_id="tok",
+            side=Side.BUY,
+            quantity_bound=QuantityBound(kind="WORST_CASE_QUOTE_NOTIONAL", amount="10"),
+            limit_price="0.5",
+            time_in_force=TimeInForce.GTC,
+            max_exposure="10",
+            executor_version="0.28.0",
+            contract_version="1.0.0-draft",
+            explanation=[],
+        )
+    with pytest.raises(ValidationError):
+        ReconcileReport(reconcile_id="r1", status="SCHEDULED", checked_orders=-1)

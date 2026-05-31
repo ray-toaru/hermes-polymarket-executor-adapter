@@ -9,6 +9,10 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 _CANONICAL_DECIMAL_RE = re.compile(r"^(0|[1-9][0-9]*)(\.[0-9]+)?$")
+_SECRET_BEARING_KEY_RE = re.compile(
+    r"(private[_-]?key|api[_-]?secret|api[_-]?passphrase|clob[_-]?secret|raw[_-]?signature|raw[_-]?signed[_-]?payload)",
+    re.IGNORECASE,
+)
 
 
 class FrozenModel(BaseModel):
@@ -53,6 +57,19 @@ def _validate_sha256_hex(value: str, *, field: str) -> str:
     if not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{64}", value):
         raise ValueError(f"{field} must be a lowercase 64-character SHA-256 hex string")
     return value
+
+
+def _contains_secret_bearing_keys(value: Any) -> bool:
+    if isinstance(value, dict):
+        for key, nested in value.items():
+            if isinstance(key, str) and _SECRET_BEARING_KEY_RE.search(key):
+                return True
+            if _contains_secret_bearing_keys(nested):
+                return True
+        return False
+    if isinstance(value, list):
+        return any(_contains_secret_bearing_keys(item) for item in value)
+    return False
 
 
 def _parse_sign_only_ref(value: str, *, field: str) -> tuple[str, str, str]:
@@ -126,6 +143,11 @@ class QuantityBound(FrozenModel):
     kind: QuantityBoundKind
     amount: str
 
+    @field_validator("amount")
+    @classmethod
+    def amount_must_be_positive_decimal_string(cls, value: str) -> str:
+        return _validate_decimal_string(value, field="quantity_bound.amount", positive=True)
+
 
 class NormalizedIntent(FrozenModel):
     normalized_intent_id: str
@@ -138,6 +160,14 @@ class NormalizedIntent(FrozenModel):
     limit_price: str
     time_in_force: TimeInForce = TimeInForce.GTC
     collateral_profile_id: str | None = None
+
+    @field_validator("limit_price")
+    @classmethod
+    def normalized_limit_price_must_be_decimal_string(cls, value: str) -> str:
+        value = _validate_decimal_string(value, field="limit_price", positive=True)
+        if Decimal(value) > Decimal("1"):
+            raise ValueError("limit_price must be in (0, 1]")
+        return value
 
 
 class RuntimeStateSummary(FrozenModel):
@@ -193,8 +223,13 @@ class ApprovalReceipt(FrozenModel):
 
     @model_validator(mode="after")
     def expiry_must_follow_approval_time(self) -> ApprovalReceipt:
+        now = datetime.now(timezone.utc)
+        if self.approved_at > now:
+            raise ValueError("approved_at must not be in the future")
         if self.expires_at <= self.approved_at:
             raise ValueError("expires_at must be later than approved_at")
+        if self.expires_at <= now:
+            raise ValueError("expires_at must be in the future")
         return self
 
 
@@ -226,6 +261,25 @@ class ExecutionPlanSummary(FrozenModel):
     @classmethod
     def plan_hashes_must_be_sha256(cls, value: str, info: Any) -> str:
         return _validate_sha256_hex(value, field=info.field_name)
+
+    @field_validator("limit_price")
+    @classmethod
+    def execution_plan_limit_price_must_be_decimal_string(cls, value: str) -> str:
+        value = _validate_decimal_string(value, field="limit_price", positive=True)
+        if Decimal(value) > Decimal("1"):
+            raise ValueError("limit_price must be in (0, 1]")
+        return value
+
+    @field_validator("max_exposure")
+    @classmethod
+    def max_exposure_must_be_positive_decimal_string(cls, value: str) -> str:
+        return _validate_decimal_string(value, field="max_exposure", positive=True)
+
+    @model_validator(mode="after")
+    def blocked_plan_requires_explanation(self) -> "ExecutionPlanSummary":
+        if self.status == "BLOCKED" and not self.explanation:
+            raise ValueError("blocked execution plans require explanation")
+        return self
 
 
 class SubmitReceipt(FrozenModel):
@@ -403,8 +457,8 @@ class StandardSignOnlyConstructionRequest(FrozenModel):
     @field_validator("signed_order_digest")
     @classmethod
     def digest_must_be_sha256(cls, value: str | None) -> str | None:
-        if value is not None and not re.fullmatch(r"[0-9A-Fa-f]{64}", value):
-            raise ValueError("signed_order_digest must be a 64-character hex SHA-256 digest")
+        if value is not None:
+            return _validate_sha256_hex(value, field="signed_order_digest")
         return value
 
     @model_validator(mode="after")
@@ -454,6 +508,8 @@ class RedactedPayloadEnvelope(FrozenModel):
     def must_be_v1_or_newer(self) -> "RedactedPayloadEnvelope":
         if self.schema_version < 1:
             raise ValueError("redacted payload schema_version must be >= 1")
+        if _contains_secret_bearing_keys(self.body):
+            raise ValueError("redacted payload body must not contain secret-bearing keys")
         return self
 
 
@@ -516,6 +572,13 @@ class ReconcileReport(FrozenModel):
     checked_orders: int
     findings: list[str] = Field(default_factory=list)
 
+    @field_validator("checked_orders")
+    @classmethod
+    def checked_orders_must_be_non_negative(cls, value: int) -> int:
+        if value < 0:
+            raise ValueError("checked_orders must be non-negative")
+        return value
+
 
 class HealthReport(FrozenModel):
     status: str
@@ -533,9 +596,7 @@ class CanaryEvidenceReference(FrozenModel):
     @field_validator("artifact_sha256", "evidence_manifest_sha256")
     @classmethod
     def hashes_must_be_sha256(cls, value: str) -> str:
-        if not re.fullmatch(r"[0-9A-Fa-f]{64}", value):
-            raise ValueError("canary evidence hashes must be 64-character SHA-256 hex strings")
-        return value
+        return _validate_sha256_hex(value, field="canary_evidence_hash")
 
 
 class CanaryApprovalReference(FrozenModel):
@@ -548,9 +609,13 @@ class CanaryApprovalReference(FrozenModel):
     @field_validator("approval_hash")
     @classmethod
     def approval_hash_must_be_sha256(cls, value: str) -> str:
-        if not re.fullmatch(r"[0-9A-Fa-f]{64}", value):
-            raise ValueError("approval_hash must be a 64-character SHA-256 hex string")
-        return value
+        return _validate_sha256_hex(value, field="approval_hash")
+
+    @model_validator(mode="after")
+    def expires_at_must_be_future(self) -> "CanaryApprovalReference":
+        if self.expires_at <= datetime.now(timezone.utc):
+            raise ValueError("expires_at must be in the future")
+        return self
 
 
 class CanaryReadinessReport(FrozenModel):
@@ -572,4 +637,9 @@ class CanaryReadinessReport(FrozenModel):
             raise ValueError("Hermes canary reports must not include secrets")
         if self.status == "BLOCKED" and not self.blocked_reasons:
             raise ValueError("blocked canary reports require at least one reason")
+        if self.status != "BLOCKED":
+            if self.approval is None:
+                raise ValueError("non-blocked canary reports require approval")
+            if self.blocked_reasons:
+                raise ValueError("non-blocked canary reports must not include blocked_reasons")
         return self
