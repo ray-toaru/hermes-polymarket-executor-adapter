@@ -137,6 +137,7 @@ def test_manifest_loader_returns_immutable_contracts_and_diagnostics(tmp_path):
 def test_manifest_loader_fails_closed_on_contract_drift(tmp_path, mutate, expected_code):
     from hermes_polymarket_executor_adapter.assistant_v0_manifest_loader import (
         AssistantV0ContractLoadError,
+        load_assistant_v0_contracts_from_objects,
         load_assistant_v0_contracts,
     )
 
@@ -152,3 +153,12 @@ def test_manifest_loader_fails_closed_on_contract_drift(tmp_path, mutate, expect
         load_assistant_v0_contracts(manifest_path, conformance_path)
 
     assert raised.value.code == expected_code
+
+
+def test_manifest_loader_supports_in_memory_objects():
+    from hermes_polymarket_executor_adapter.assistant_v0_manifest_loader import (
+        load_assistant_v0_contracts_from_objects,
+    )
+
+    contracts = load_assistant_v0_contracts_from_objects(_manifest(), _conformance())
+    assert contracts.contract_version == "assistant-v0"

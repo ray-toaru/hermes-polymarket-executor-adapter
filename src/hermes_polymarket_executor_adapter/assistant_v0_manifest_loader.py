@@ -31,9 +31,16 @@ def load_assistant_v0_contracts(
     manifest_path: Path,
     conformance_path: Path,
 ) -> AssistantV0Contracts:
-    manifest = _load_json_object(manifest_path)
-    conformance = _load_json_object(conformance_path)
+    return load_assistant_v0_contracts_from_objects(
+        _load_json_object(manifest_path),
+        _load_json_object(conformance_path),
+    )
 
+
+def load_assistant_v0_contracts_from_objects(
+    manifest: dict[str, Any],
+    conformance: dict[str, Any],
+) -> AssistantV0Contracts:
     manifest_tools = _manifest_tool_names(manifest)
     forbidden = _string_tuple(conformance.get("forbidden_tool_names"))
     for tool_name in sorted(set(manifest_tools) & set(forbidden)):
@@ -79,7 +86,7 @@ def load_assistant_v0_contracts(
             "safe_tool_count": len(safe_session_tools),
             "target_component": ASSISTANT_V0_TARGET_COMPONENT,
         },
-    )
+        )
 
 
 def _load_json_object(path: Path) -> dict[str, Any]:

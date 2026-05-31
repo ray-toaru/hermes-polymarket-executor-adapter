@@ -16,6 +16,7 @@ from .assistant_v0_contracts import (
     assistant_v0_executor_mode_for,
     validate_assistant_v0_tool_request,
 )
+from .assistant_v0_manifest_loader import load_assistant_v0_contracts_from_objects
 
 
 ASSISTANT_V0_TOOLSET = "polymarket_assistant_v0"
@@ -81,7 +82,7 @@ class AssistantV0Facade:
 
 
 def build_assistant_v0_tool_specs() -> tuple[AssistantV0ToolSpec, ...]:
-    return tuple(
+    specs = tuple(
         AssistantV0ToolSpec(
             name=name,
             schema=_ASSISTANT_V0_SCHEMAS[name],
@@ -90,6 +91,11 @@ def build_assistant_v0_tool_specs() -> tuple[AssistantV0ToolSpec, ...]:
         )
         for name in sorted(ADAPTER_REQUIRED_TOOLS)
     )
+    load_assistant_v0_contracts_from_objects(
+        _assistant_v0_manifest(specs),
+        _assistant_v0_conformance(),
+    )
+    return specs
 
 
 def handle_risk_review_trade_plan(args: dict, **_kwargs) -> str:
@@ -184,6 +190,53 @@ def _request_schema(model: Any, description: str) -> dict[str, Any]:
     schema = model.model_json_schema()
     schema["description"] = description
     return {"description": description, "parameters": schema}
+
+
+def _assistant_v0_manifest(specs: tuple[AssistantV0ToolSpec, ...]) -> dict[str, Any]:
+    return {
+        "name": "polymarket-trading-assistant-v0-safe-tools",
+        "version": "0.28.0",
+        "tools": [
+            {
+                "name": spec.name,
+                "input_schema": spec.schema["parameters"],
+                **(
+                    {
+                        "fixed_executor_mode": DRY_RUN_FIXED_EXECUTOR_MODE,
+                        "allow_mode_override": False,
+                    }
+                    if spec.name == "dry_run_trade_plan"
+                    else {}
+                ),
+            }
+            for spec in specs
+        ],
+        "forbidden_effects": ["approve_trade_plan", "post_order", "raw_clob_request"],
+    }
+
+
+def _assistant_v0_conformance() -> dict[str, Any]:
+    from .assistant_v0_contracts import (
+        ASSISTANT_LOCAL_TOOLS_NOT_REQUIRED_FROM_ADAPTER,
+        FORBIDDEN_TOOL_NAMES,
+        SAFE_SESSION_TOOLS,
+    )
+
+    return {
+        "contract_version": "assistant-v0",
+        "target_component": "hermes-polymarket-executor-adapter",
+        "safe_session_tools": sorted(SAFE_SESSION_TOOLS),
+        "adapter_required_tools": sorted(ADAPTER_REQUIRED_TOOLS),
+        "forbidden_tool_names": sorted(FORBIDDEN_TOOL_NAMES),
+        "dry_run_executor_mode_contract": {
+            "tool": "dry_run_trade_plan",
+            "fixed_executor_mode": DRY_RUN_FIXED_EXECUTOR_MODE,
+            "allow_mode_override": False,
+        },
+        "assistant_local_tools_not_required_from_adapter": sorted(
+            ASSISTANT_LOCAL_TOOLS_NOT_REQUIRED_FROM_ADAPTER
+        ),
+    }
 
 
 _DESCRIPTIONS = {

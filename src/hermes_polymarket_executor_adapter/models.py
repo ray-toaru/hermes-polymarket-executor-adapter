@@ -9,6 +9,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 _CANONICAL_DECIMAL_RE = re.compile(r"^(0|[1-9][0-9]*)(\.[0-9]+)?$")
+_SAFE_IDENTIFIER_RE = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
 _SECRET_BEARING_KEY_RE = re.compile(
     r"(private[_-]?key|api[_-]?secret|api[_-]?passphrase|clob[_-]?secret|raw[_-]?signature|raw[_-]?signed[_-]?payload)",
     re.IGNORECASE,
@@ -30,6 +31,14 @@ class FrozenModel(BaseModel):
         if is_reference_field and isinstance(value, str) and not value.strip():
             raise ValueError(f"{field_name} must not be blank")
         return value
+
+
+def _validate_safe_identifier(value: str, *, field: str) -> str:
+    if not isinstance(value, str) or not _SAFE_IDENTIFIER_RE.fullmatch(value):
+        raise ValueError(
+            f"{field} must match [A-Za-z0-9._:-] and be at most 128 characters"
+        )
+    return value
 
 
 class Side(str, Enum):
@@ -91,6 +100,11 @@ class MarketRef(FrozenModel):
     slug: str | None = None
     is_sports: bool = False
 
+    @field_validator("condition_id")
+    @classmethod
+    def condition_id_must_be_safe_identifier(cls, value: str) -> str:
+        return _validate_safe_identifier(value, field="condition_id")
+
 
 class QuantityIntent(FrozenModel):
     max_notional: str | None = None
@@ -121,6 +135,15 @@ class TradeIntent(FrozenModel):
     limit_price: str
     time_in_force: TimeInForce = TimeInForce.GTC
     collateral_profile_id: str | None = None
+
+    @field_validator(
+        "client_intent_id", "account_id", "token_id", "collateral_profile_id"
+    )
+    @classmethod
+    def trade_identifiers_must_be_safe(cls, value: str | None, info: Any) -> str | None:
+        if value is None:
+            return value
+        return _validate_safe_identifier(value, field=info.field_name)
 
     @field_validator("limit_price")
     @classmethod

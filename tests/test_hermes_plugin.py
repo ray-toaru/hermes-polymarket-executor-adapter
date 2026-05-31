@@ -31,7 +31,7 @@ def test_registers_service_and_admin_tools():
     ctx = FakeContext()
     register(ctx)
 
-    assert {
+    expected_executor = {
         "polymarket_executor_health",
         "polymarket_normalize_intent",
         "polymarket_capture_snapshot",
@@ -45,13 +45,23 @@ def test_registers_service_and_admin_tools():
         "polymarket_admin_cancel_order",
         "polymarket_admin_reconcile",
         "polymarket_admin_list_audit_events",
-    }.issubset(ctx.tools)
+    }
+    actual_executor = {
+        name
+        for name, meta in ctx.tools.items()
+        if meta["toolset"] in {"polymarket_executor", "polymarket_executor_admin"}
+    }
+    assert actual_executor == expected_executor
     assert ctx.tools["polymarket_executor_health"]["toolset"] == "polymarket_executor"
     assert ctx.tools["polymarket_admin_cancel_order"]["toolset"] == "polymarket_executor_admin"
     assert ctx.tools["polymarket_admin_cancel_order"]["requires_env"] == [
         "PM_EXEC_SERVICE_TOKEN",
         "PM_EXEC_ADMIN_TOKEN",
     ]
+    forbidden = {"submit_plan", "post_order", "cancel_live_order", "approve_trade_plan"}
+    assert not (forbidden & set(ctx.tools))
+    assert "polymarket_prepare_execution_plan" in ctx.tools
+    assert "polymarket_submit_plan" not in ctx.tools
 
 
 def test_service_availability_requires_service_token(monkeypatch):

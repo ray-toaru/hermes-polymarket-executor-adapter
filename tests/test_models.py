@@ -121,6 +121,29 @@ def test_id_and_ref_fields_must_not_be_blank():
         )
 
 
+def test_trade_identifiers_enforce_safe_charset_and_length():
+    with pytest.raises(ValidationError):
+        TradeIntent(
+            client_intent_id="bad id",
+            account_id="acct",
+            market=MarketRef(condition_id="c1"),
+            token_id="t1",
+            side=Side.BUY,
+            quantity=QuantityIntent(max_notional="10"),
+            limit_price="0.5",
+        )
+    with pytest.raises(ValidationError):
+        TradeIntent(
+            client_intent_id="i1",
+            account_id="acct",
+            market=MarketRef(condition_id="c1"),
+            token_id="x" * 129,
+            side=Side.BUY,
+            quantity=QuantityIntent(max_notional="10"),
+            limit_price="0.5",
+        )
+
+
 def test_sign_only_lifecycle_record_validates_boundary():
     ok = SignOnlyLifecycleRecord(
         execution_id="exec-1",
