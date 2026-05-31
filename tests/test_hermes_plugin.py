@@ -86,7 +86,7 @@ def test_health_handler_returns_json_and_closes_client(monkeypatch):
         def health(self):
             return HealthReport(
                 status="READY",
-                executor_version="0.27.3",
+                executor_version="0.28.0",
                 contract_version="1.0.0-draft",
                 checks={"database": "ok"},
             )
@@ -230,7 +230,7 @@ def test_prepare_execution_plan_chains_safe_executor_steps(monkeypatch):
                 limit_price="0.5",
                 time_in_force="GTC",
                 max_exposure="10",
-                executor_version="0.27.3",
+                executor_version="0.28.0",
                 contract_version="1.0.0-draft",
             )
 

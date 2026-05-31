@@ -38,8 +38,11 @@ operator/tool input
   -> ExecutorClient.evaluate_decision
   -> approval
   -> ExecutorClient.compile_plan
-  -> ExecutorClient.submit_plan
+  -> optional ExecutorClient.submit_plan(mode="BLOCKED_DRY_RUN")
 ```
+
+The adapter does not permit live submit mode. Any submit operation through this
+repository remains an explicit blocked dry-run handoff to the executor API.
 
 ## Admin Flow
 

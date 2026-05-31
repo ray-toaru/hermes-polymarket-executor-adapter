@@ -18,11 +18,12 @@
   configured Hermes runtime venv and exposes `polymarket_executor` plus
   `polymarket_executor_admin` toolsets.
 
-## Still Required Before v0.27 Suite Release
+## Still Required Before v0.28 Suite Release
 
 - Re-run adapter tests from the integration repository after any executor API
   schema change.
-- Keep package/version compatibility recorded in `COMPONENT_COMPATIBILITY.md`.
+- Keep package/version compatibility recorded in the integration repository
+  compatibility documents, not as an independent local truth source here.
 - Preserve the adapter as a Hermes executor adapter only; execution authority
   remains in `polymarket-execution-engine`.
 - Replace the current local profile install procedure with a packaged Hermes

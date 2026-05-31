@@ -39,7 +39,7 @@ def test_get_paths_url_encode_identifiers(monkeypatch):
             "execution_id": "exec/with space",
             "receipt_id": "receipt-1",
             "status": "BLOCKED",
-            "executor_version": "0.26.1",
+            "executor_version": "0.28.0",
             "contract_version": "1.0.0-draft",
         })
 
@@ -87,7 +87,7 @@ def test_submit_plan_posts_explicit_mode(monkeypatch):
             "execution_id": json["execution_id"],
             "receipt_id": "receipt-1",
             "status": "BLOCKED",
-            "executor_version": "0.26.1",
+            "executor_version": "0.28.0",
             "contract_version": "1.0.0-draft",
         })
 
@@ -109,7 +109,7 @@ def test_submit_plan_forwards_correlation_id_header(monkeypatch):
             "execution_id": json["execution_id"],
             "receipt_id": "receipt-1",
             "status": "BLOCKED",
-            "executor_version": "0.26.1",
+            "executor_version": "0.28.0",
             "contract_version": "1.0.0-draft",
         })
 
@@ -118,6 +118,20 @@ def test_submit_plan_forwards_correlation_id_header(monkeypatch):
     client.submit_plan("exec-1", "a" * 64, "idem-1", correlation_id="corr-submit-1")
     assert captured["headers"]["X-Correlation-Id"] == "corr-submit-1"
     client.close()
+
+
+def test_submit_plan_rejects_live_mode():
+    client = ExecutorClient(ExecutorConfig(base_url="http://executor", service_token="svc"))
+    with pytest.raises(ValueError, match="BLOCKED_DRY_RUN"):
+        client.submit_plan("exec-1", "a" * 64, "idem-1", mode="LIVE")  # type: ignore[arg-type]
+    client.close()
+
+
+def test_executor_config_from_env_requires_service_url(monkeypatch):
+    monkeypatch.delenv("PM_EXEC_SERVICE_URL", raising=False)
+    monkeypatch.setenv("PM_EXEC_SERVICE_TOKEN", "svc")
+    with pytest.raises(RuntimeError, match="PM_EXEC_SERVICE_URL is required"):
+        ExecutorConfig.from_env()
 
 
 def test_normalize_posts_expected_payload(monkeypatch):

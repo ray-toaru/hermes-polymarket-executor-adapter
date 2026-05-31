@@ -34,6 +34,9 @@ export PM_EXEC_SERVICE_TOKEN=...
 export PM_EXEC_ADMIN_TOKEN=...  # admin tools only
 ```
 
+`PM_EXEC_SERVICE_URL` is required. The adapter does not silently default to a
+local executor URL.
+
 ## Toolsets
 
 Service/query tools use the `polymarket_executor` toolset:

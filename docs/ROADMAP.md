@@ -9,7 +9,7 @@ safe report rendering, and service/admin token separation.
 It does not own trading strategy, execution-engine risk policy, release/canary
 governance, signing, direct CLOB access, or executor database credentials.
 
-## v0.27 Development Status
+## v0.28 Development Status
 
 - Package metadata and docs use `hermes-polymarket-executor-adapter`.
 - Models and client helpers align with the executor OpenAPI contract through
@@ -102,11 +102,12 @@ Status: evaluated, not implemented.
   signing, direct CLOB, executor DB write, or secret-bearing behavior.
 - See `docs/MCP_EVALUATION.md`.
 
-## Remaining Before a v0.27 Suite Release
+## Remaining Before a v0.28 Suite Release
 
 1. Keep model/client parity green against the execution-engine OpenAPI schema.
 2. Keep no-secret and no-signing tests green under the integration repository.
 3. Update supported executor contract notes if the execution-engine API changes
-   before the v0.27 suite release.
-4. Validate the plugin inside the target Hermes profile with
-   `scripts/check_hermes_profile_plugin.py --profile-cmd <local-profile-command>`.
+   before the v0.28 suite release.
+4. Validate the plugin inside the target Hermes profile from the integration
+   repository root with
+   `python scripts/check_hermes_profile_plugin.py --profile-cmd <local-profile-command>`.

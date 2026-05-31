@@ -11,7 +11,7 @@ keys, CLOB API secrets, raw signed payloads, or executor database credentials.
 It must not sign, submit live orders, cancel live orders, call CLOB directly, or
 own executor risk policy.
 
-## v0.27 development status
+## v0.28 development status
 
 - Pydantic models aligned with OpenAPI public schemas.
 - Canonical decimal validation aligned with executor source.
@@ -35,26 +35,35 @@ own executor risk policy.
 
 ## Hermes plugin
 
-Install the adapter into the Hermes Python environment and enable the plugin:
+Install the adapter into the Hermes Python environment:
 
 ```bash
 python -m pip install -e .
-hermes plugins enable polymarket-executor
 ```
+
+Then add `polymarket-executor` to the active Hermes profile's
+`plugins.enabled` allow-list. `hermes plugins enable` only manages
+directory-managed plugins and is not the correct activation path for this
+entry-point plugin.
 
 Configure executor API tokens at runtime:
 
 ```bash
-export PM_EXEC_SERVICE_URL=http://localhost:8080
+export PM_EXEC_SERVICE_URL=http://executor-host:8080
 export PM_EXEC_SERVICE_TOKEN=...
 export PM_EXEC_ADMIN_TOKEN=...  # only required for admin tools
 ```
+
+`PM_EXEC_SERVICE_URL` is required. The adapter will not silently default to a
+local executor host.
 
 Service tools are registered under `polymarket_executor`; admin tools are
 registered under `polymarket_executor_admin` and require both service and admin
 tokens. See `docs/HERMES_PLUGIN.md` for the tool list and operating boundary.
 The composite `polymarket_prepare_execution_plan` tool stops at plan
-compilation and does not submit.
+compilation and does not submit. The low-level `submit_plan` client method is
+retained only for explicit executor-side `BLOCKED_DRY_RUN` submission; the
+adapter does not permit live submit mode.
 
 ## Run tests
 

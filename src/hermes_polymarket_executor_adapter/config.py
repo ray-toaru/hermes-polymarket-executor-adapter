@@ -22,7 +22,9 @@ class ExecutorConfig:
 
     @classmethod
     def from_env(cls) -> "ExecutorConfig":
-        base_url = os.environ.get("PM_EXEC_SERVICE_URL", "http://localhost:8080")
+        base_url = os.environ.get("PM_EXEC_SERVICE_URL")
+        if not base_url:
+            raise RuntimeError("PM_EXEC_SERVICE_URL is required")
         service_token = os.environ.get("PM_EXEC_SERVICE_TOKEN")
         if not service_token:
             raise RuntimeError("PM_EXEC_SERVICE_TOKEN is required")

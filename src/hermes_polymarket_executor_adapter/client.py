@@ -193,10 +193,12 @@ class ExecutorClient:
         execution_id: str,
         plan_hash: str,
         idempotency_key: str,
-        mode: Literal["BLOCKED_DRY_RUN", "LIVE"] = "BLOCKED_DRY_RUN",
+        mode: Literal["BLOCKED_DRY_RUN"] = "BLOCKED_DRY_RUN",
         *,
         correlation_id: str | None = None,
     ) -> SubmitReceipt:
+        if mode != "BLOCKED_DRY_RUN":
+            raise ValueError("adapter submit_plan only supports BLOCKED_DRY_RUN")
         return SubmitReceipt.model_validate(
             self._post(
                 "/v1/submissions",
