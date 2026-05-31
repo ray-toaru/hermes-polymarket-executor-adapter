@@ -194,6 +194,8 @@ class ExecutorClient:
         plan_hash: str,
         idempotency_key: str,
         mode: Literal["BLOCKED_DRY_RUN", "LIVE"] = "BLOCKED_DRY_RUN",
+        *,
+        correlation_id: str | None = None,
     ) -> SubmitReceipt:
         return SubmitReceipt.model_validate(
             self._post(
@@ -204,6 +206,7 @@ class ExecutorClient:
                     "idempotency_key": idempotency_key,
                     "mode": mode,
                 },
+                correlation_id=correlation_id,
             )
         )
 

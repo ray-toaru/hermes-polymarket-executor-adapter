@@ -100,6 +100,26 @@ def test_submit_plan_posts_explicit_mode(monkeypatch):
     client.close()
 
 
+def test_submit_plan_forwards_correlation_id_header(monkeypatch):
+    captured = {}
+
+    def fake_post(self, url, json, headers):
+        captured["headers"] = headers
+        return httpx.Response(202, request=httpx.Request("POST", url), json={
+            "execution_id": json["execution_id"],
+            "receipt_id": "receipt-1",
+            "status": "BLOCKED",
+            "executor_version": "0.26.1",
+            "contract_version": "1.0.0-draft",
+        })
+
+    monkeypatch.setattr(httpx.Client, "post", fake_post)
+    client = ExecutorClient(ExecutorConfig(base_url="http://executor", service_token="svc"))
+    client.submit_plan("exec-1", "a" * 64, "idem-1", correlation_id="corr-submit-1")
+    assert captured["headers"]["X-Correlation-Id"] == "corr-submit-1"
+    client.close()
+
+
 def test_normalize_posts_expected_payload(monkeypatch):
     captured = {}
 
