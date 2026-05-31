@@ -123,6 +123,32 @@ def test_component_compatibility_doc_records_executor_contract():
     assert "`polymarket-executor`" in text
 
 
+def test_plugin_docs_reference_integration_root_script_location():
+    docs_root = Path(__file__).resolve().parents[1] / "docs"
+    hermes_plugin = (docs_root / "HERMES_PLUGIN.md").read_text(encoding="utf-8")
+    roadmap = (docs_root / "ROADMAP.md").read_text(encoding="utf-8")
+
+    assert "cd /path/to/polymarket-execution-suite" in hermes_plugin
+    assert "cd /path/to/polymarket-execution-suite" in roadmap
+    assert "python scripts/check_hermes_profile_plugin.py" in hermes_plugin
+
+
+def test_adapter_repo_has_no_stale_executor_version_fixtures():
+    repo_root = Path(__file__).resolve().parents[1]
+    stale_versions = {f"0.{minor}.{patch}" for minor, patch in ((26, 1), (27, 3))}
+    this_file = Path(__file__).resolve()
+    for path in repo_root.rglob("*"):
+        if not path.is_file():
+            continue
+        if path.resolve() == this_file:
+            continue
+        if path.suffix not in {".py", ".md", ".toml", ".yaml", ".yml", ".json"}:
+            continue
+        text = path.read_text(encoding="utf-8")
+        for version in stale_versions:
+            assert version not in text, f"stale version {version} found in {path.relative_to(repo_root)}"
+
+
 def test_service_availability_requires_service_token(monkeypatch):
     from hermes_polymarket_executor_adapter.hermes_handlers import check_executor_available
 

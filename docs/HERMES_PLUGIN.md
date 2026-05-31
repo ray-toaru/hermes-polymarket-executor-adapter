@@ -28,6 +28,7 @@ profile's `plugins.enabled` allow-list. A local profile can then be checked
 from the integration repository root:
 
 ```bash
+cd /path/to/polymarket-execution-suite
 python scripts/check_hermes_profile_plugin.py --profile-cmd "$HERMES_PROFILE_CMD"
 "$HERMES_PROFILE_CMD" tools list --platform cli
 ```
@@ -119,6 +120,7 @@ PYTHONPATH=src python -m compileall -q src tests
 Hermes runtime validation before suite release:
 
 ```bash
+cd /path/to/polymarket-execution-suite
 python scripts/check_hermes_profile_plugin.py --profile-cmd "$HERMES_PROFILE_CMD"
 "$HERMES_PROFILE_CMD" tools list --platform cli
 ```
