@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import sys
 import tomllib
+from types import SimpleNamespace
 
 
 class FakeContext:
@@ -111,6 +113,46 @@ def test_register_uses_injected_assistant_v0_handlers():
     ]
     assert payload["executor_called"] is True
     assert payload["payload"]["status"] == "READY"
+
+
+def test_register_integrates_with_real_hermes_plugin_context():
+    adapter_root = Path(__file__).resolve().parents[1]
+    rust_root = adapter_root.parents[1]
+    hermes_agent_root = rust_root / "hermes-agent"
+    if not hermes_agent_root.exists():
+        raise AssertionError(f"missing sibling hermes-agent checkout: {hermes_agent_root}")
+
+    sys.path.insert(0, str(hermes_agent_root))
+    try:
+        from hermes_cli.plugins import PluginContext, PluginManifest
+        from tools.registry import registry
+    finally:
+        sys.path.pop(0)
+
+    from hermes_polymarket_executor_adapter.hermes_plugin import register
+
+    manifest = PluginManifest(name="polymarket-executor", source="entrypoint", key="polymarket-executor")
+    manager = SimpleNamespace(_plugin_tool_names=set())
+    ctx = PluginContext(manifest, manager)
+    before_tools = set(manager._plugin_tool_names)
+    runtime_registered: set[str] = set()
+    try:
+        register(ctx)
+        runtime_registered = set(manager._plugin_tool_names) - before_tools
+        assert runtime_registered
+        assert "polymarket_executor_health" in runtime_registered
+        assert "polymarket_admin_cancel_order" in runtime_registered
+        assert "dry_run_trade_plan" in runtime_registered
+        assert "polymarket_submit_plan" not in runtime_registered
+        assert "polymarket_executor_health" in registry.get_tool_names_for_toolset(
+            "polymarket_executor"
+        )
+        assert "polymarket_admin_cancel_order" in registry.get_tool_names_for_toolset(
+            "polymarket_executor_admin"
+        )
+    finally:
+        for name in runtime_registered:
+            registry.deregister(name)
 
 
 def test_component_compatibility_doc_records_executor_contract():
