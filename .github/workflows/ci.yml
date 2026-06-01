@@ -24,6 +24,7 @@ on:
 
 permissions:
   contents: read
+  actions: write
 
 env:
   HERMES_PROFILE: hm-pdp-test
@@ -37,16 +38,16 @@ jobs:
         python-version: ["3.11", "3.12", "3.13"]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
 
       - name: Install Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Install package and test dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip==25.3
           python -m pip install -c constraints-ci.txt -e ".[test]"
 
       - name: Run tests
