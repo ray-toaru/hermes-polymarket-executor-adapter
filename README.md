@@ -11,7 +11,7 @@ keys, CLOB API secrets, raw signed payloads, or executor database credentials.
 It must not sign, submit live orders, cancel live orders, call CLOB directly, or
 own executor risk policy.
 
-## v0.28 development status
+## Current v0.28 adapter status
 
 - Pydantic models aligned with OpenAPI public schemas.
 - Canonical decimal validation aligned with executor source.
