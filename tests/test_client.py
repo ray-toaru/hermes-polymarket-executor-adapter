@@ -71,6 +71,33 @@ def test_executor_error_preserves_envelope(monkeypatch):
     client.close()
 
 
+def test_executor_error_does_not_leak_remote_message_or_text(monkeypatch):
+    def fake_get(self, url, headers):
+        request = httpx.Request("GET", url)
+        return httpx.Response(
+            500,
+            request=request,
+            json={
+                "code": "internal_error",
+                "message": "api_secret=top-secret raw_signature=abcdef",
+                "correlation_id": "corr-safe",
+            },
+        )
+
+    monkeypatch.setattr(httpx.Client, "get", fake_get)
+    client = ExecutorClient(ExecutorConfig(base_url="http://executor", service_token="svc"))
+    with pytest.raises(ExecutorHttpError) as raised:
+        client.health()
+    message = str(raised.value)
+    assert "status 500" in message
+    assert "code=internal_error" in message
+    assert "corr-safe" in message
+    assert "api_secret" not in message
+    assert "raw_signature" not in message
+    assert "top-secret" not in message
+    client.close()
+
+
 def test_admin_operation_requires_admin_token():
     client = ExecutorClient(ExecutorConfig(base_url="http://example.test", service_token="svc"))
     with pytest.raises(PermissionError):
