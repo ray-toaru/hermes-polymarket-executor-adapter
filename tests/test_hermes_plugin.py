@@ -37,6 +37,32 @@ def test_pyproject_exposes_hermes_plugin_entrypoint():
     )
 
 
+def test_pyproject_dependency_pins_align_with_ci_constraints():
+    adapter_root = Path(__file__).resolve().parents[1]
+    with (adapter_root / "pyproject.toml").open("rb") as fh:
+        pyproject = tomllib.load(fh)
+
+    constraints: dict[str, str] = {}
+    for line in (adapter_root / "constraints-ci.txt").read_text().splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        name, version = stripped.split("==", 1)
+        constraints[name.lower().replace("_", "-")] = version
+
+    pinned_specs = (
+        list(pyproject["project"]["dependencies"])
+        + list(pyproject["project"]["optional-dependencies"]["test"])
+    )
+    assert pinned_specs
+    for spec in pinned_specs:
+        assert "==" in spec
+        assert ">=" not in spec
+        name, version = spec.split("==", 1)
+        normalized = name.lower().replace("_", "-")
+        assert constraints.get(normalized) == version
+
+
 def test_registers_service_and_admin_tools():
     from hermes_polymarket_executor_adapter.hermes_plugin import register
 
@@ -453,6 +479,7 @@ def test_prepare_execution_plan_chains_safe_executor_steps(monkeypatch):
                 limit_price="0.5",
                 time_in_force="GTC",
                 max_exposure="10",
+                explanation=["fixture ready plan"],
                 executor_version="0.28.0",
                 contract_version="1.0.0-draft",
             )
