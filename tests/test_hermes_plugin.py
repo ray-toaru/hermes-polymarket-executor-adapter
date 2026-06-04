@@ -253,6 +253,14 @@ def test_plugin_docs_reference_integration_root_script_location():
     assert "python scripts/check_hermes_profile_plugin.py" in hermes_plugin
 
 
+def test_adapter_repo_includes_profile_check_wrapper_script():
+    script = Path(__file__).resolve().parents[1] / "scripts" / "check_hermes_profile_plugin.py"
+    text = script.read_text(encoding="utf-8")
+    assert 'runpy.run_path' in text
+    assert 'check_hermes_profile_plugin.py' in text
+    assert 'parents[2]' in text
+
+
 def test_adapter_repo_has_no_stale_executor_version_fixtures():
     repo_root = Path(__file__).resolve().parents[1]
     stale_versions = {f"0.{minor}.{patch}" for minor, patch in ((26, 1), (27, 3))}
