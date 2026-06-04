@@ -115,6 +115,23 @@ def test_register_uses_injected_assistant_v0_handlers():
     assert payload["payload"]["status"] == "READY"
 
 
+def test_register_builds_assistant_v0_specs_via_contract_loader(monkeypatch):
+    from hermes_polymarket_executor_adapter import hermes_plugin
+
+    calls = []
+
+    def fake_build(handlers=None):
+        calls.append(handlers)
+        return ()
+
+    monkeypatch.setattr(hermes_plugin.assistant_v0_facade, "build_assistant_v0_tool_specs", fake_build)
+
+    ctx = FakeContext()
+    hermes_plugin.register(ctx)
+
+    assert calls == [None]
+
+
 def test_register_integrates_with_real_hermes_plugin_context():
     adapter_root = Path(__file__).resolve().parents[1]
     rust_root = adapter_root.parents[1]
