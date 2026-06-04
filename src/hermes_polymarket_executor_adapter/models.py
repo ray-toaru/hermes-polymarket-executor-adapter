@@ -299,9 +299,9 @@ class ExecutionPlanSummary(FrozenModel):
         return _validate_decimal_string(value, field="max_exposure", positive=True)
 
     @model_validator(mode="after")
-    def blocked_plan_requires_explanation(self) -> "ExecutionPlanSummary":
-        if self.status == "BLOCKED" and not self.explanation:
-            raise ValueError("blocked execution plans require explanation")
+    def plan_requires_explanation(self) -> "ExecutionPlanSummary":
+        if not self.explanation:
+            raise ValueError("execution plans require explanation")
         return self
 
 

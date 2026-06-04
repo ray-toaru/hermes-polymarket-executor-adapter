@@ -478,6 +478,30 @@ def test_execution_plan_summary_and_reconcile_report_enforce_bounds():
             explanation=[],
         )
     with pytest.raises(ValidationError):
+        ExecutionPlanSummary(
+            execution_id="exec-1",
+            account_id="acct",
+            normalized_intent_id="norm-1",
+            snapshot_id="snap-1",
+            snapshot_hash=HASH_1,
+            decision_id="dec-1",
+            decision_hash=HASH_1,
+            approval_id="approval-1",
+            approval_hash=HASH_1,
+            plan_hash=HASH_1,
+            status="READY",
+            condition_id="cond",
+            token_id="tok",
+            side=Side.BUY,
+            quantity_bound=QuantityBound(kind="WORST_CASE_QUOTE_NOTIONAL", amount="10"),
+            limit_price="0.5",
+            time_in_force=TimeInForce.GTC,
+            max_exposure="10",
+            executor_version="0.28.0",
+            contract_version="1.0.0-draft",
+            explanation=[],
+        )
+    with pytest.raises(ValidationError):
         ReconcileReport(reconcile_id="r1", status="SCHEDULED", checked_orders=-1)
     with pytest.raises(ValidationError):
         ExecutionPlanSummary(
