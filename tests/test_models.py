@@ -144,6 +144,24 @@ def test_trade_identifiers_enforce_safe_charset_and_length():
         )
 
 
+def test_canary_hash_references_require_lowercase_sha256():
+    with pytest.raises(ValidationError):
+        CanaryEvidenceReference(
+            artifact_sha256="A" * 64,
+            evidence_manifest_sha256="b" * 64,
+            manifest_path="polymarket-execution-engine/evidence/current/manifest.json",
+            release_status="shadow-ready SDK sign-only candidate",
+        )
+    with pytest.raises(ValidationError):
+        CanaryApprovalReference(
+            approval_id="approval-1",
+            approval_hash="C" * 64,
+            scope="REAL_FUNDS_CANARY",
+            expires_at="2099-01-01T00:00:00Z",
+            operator_identity_ref="operator-ref",
+        )
+
+
 def test_sign_only_lifecycle_record_validates_boundary():
     ok = SignOnlyLifecycleRecord(
         execution_id="exec-1",
@@ -192,6 +210,15 @@ def test_sign_only_lifecycle_record_validates_boundary():
             state="SIGNED_DRY_RUN",
             event="SIGNED_WITHOUT_POST",
             signed_order_ref=f"sign-only:exec-2:{HASH_1}:{DIGEST_1}",
+            no_remote_side_effect=True,
+        )
+    with pytest.raises(ValueError):
+        SignOnlyLifecycleRecord(
+            execution_id="exec-1",
+            account_id="acct",
+            state="SIGNED_DRY_RUN",
+            event="SIGNED_WITHOUT_POST",
+            signed_order_ref=f"sign-only:exec-1:{HASH_1}:{'A' * 64}",
             no_remote_side_effect=True,
         )
 
@@ -264,6 +291,15 @@ def test_standard_sign_only_construction_ref_must_bind_plan_hash():
             signed_order_digest=DIGEST_1,
             no_remote_side_effect=True,
         )
+    with pytest.raises(ValidationError):
+        StandardSignOnlyConstructionRequest(
+            execution_id="exec-1",
+            account_id="acct",
+            plan_hash=HASH_1,
+            signed_order_ref=f"sign-only:exec-1:{HASH_1}:{DIGEST_1}",
+            signed_order_digest="D" * 64,
+            no_remote_side_effect=True,
+        )
 
 
 def test_execution_lifecycle_payload_requires_redacted_envelope():
@@ -297,6 +333,20 @@ def test_execution_lifecycle_payload_requires_redacted_envelope():
             correlation_id=None,
             redacted_fields=[],
             body={"private_key": "secret"},
+        )
+    with pytest.raises(ValidationError):
+        ExecutionLifecycleEvent(
+            execution_id="exec-1",
+            account_id="acct",
+            event_type="CANCEL_REQUESTED_NON_LIVE",
+            event_source="pmx-api",
+            payload={
+                "schema_version": 1,
+                "kind": "cancel_requested_non_live",
+                "correlation_id": None,
+                "redacted_fields": [],
+                "body": {"api_secret": "secret"},
+            },
         )
 
 
@@ -429,3 +479,26 @@ def test_execution_plan_summary_and_reconcile_report_enforce_bounds():
         )
     with pytest.raises(ValidationError):
         ReconcileReport(reconcile_id="r1", status="SCHEDULED", checked_orders=-1)
+    with pytest.raises(ValidationError):
+        ExecutionPlanSummary(
+            execution_id="exec-1",
+            account_id="acct",
+            normalized_intent_id="norm-1",
+            snapshot_id="snap-1",
+            snapshot_hash=HASH_1,
+            decision_id="dec-1",
+            decision_hash=HASH_1,
+            approval_id="approval-1",
+            approval_hash=HASH_1,
+            plan_hash=HASH_1,
+            status="READY",
+            condition_id="cond",
+            token_id="tok",
+            side=Side.BUY,
+            quantity_bound=QuantityBound(kind="WORST_CASE_QUOTE_NOTIONAL", amount="10"),
+            limit_price="0.5",
+            time_in_force=TimeInForce.GTC,
+            max_exposure="1e-3",
+            executor_version="0.28.0",
+            contract_version="1.0.0-draft",
+        )
