@@ -4,7 +4,7 @@ import json
 import os
 from typing import Any, Callable
 
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from .client import ExecutorClient, ExecutorHttpError
 from .config import ExecutorConfig
@@ -38,7 +38,7 @@ def _error(message: str) -> str:
     return json.dumps({"error": message}, ensure_ascii=False, sort_keys=True)
 
 
-def _validate(model: type, payload: Any):
+def _validate(model: type[BaseModel], payload: Any):
     return model.model_validate(payload)
 
 

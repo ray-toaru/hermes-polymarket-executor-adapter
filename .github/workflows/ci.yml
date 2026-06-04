@@ -50,11 +50,21 @@ jobs:
         run: |
           python -m pip install --upgrade pip==25.3
           python -m pip install -c constraints-ci.txt -e ".[test]"
+          python -m pip install ruff==0.15.15 mypy==2.1.0 bandit==1.9.4
 
       - name: Run tests
         env:
           PYTHONPATH: src
         run: python -m pytest -q
+
+      - name: Lint sources
+        run: python -m ruff check src tests
+
+      - name: Type-check sources
+        run: python -m mypy src
+
+      - name: Security scan sources
+        run: python -m bandit -q -r src
 
       - name: Compile Python sources
         run: python -m compileall -q src tests

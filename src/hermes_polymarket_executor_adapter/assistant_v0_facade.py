@@ -11,7 +11,6 @@ from .assistant_v0_contracts import (
     DRY_RUN_FIXED_EXECUTOR_MODE,
     DryRunTradePlanRequest,
     GetExecutionStatusRequest,
-    RecordOperatorReviewReferenceRequest,
     RiskReviewTradePlanRequest,
     assistant_v0_executor_mode_for,
     validate_assistant_v0_tool_request,
