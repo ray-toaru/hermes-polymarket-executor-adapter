@@ -188,11 +188,13 @@ def test_normalize_posts_expected_payload(monkeypatch):
     intent = TradeIntent(
         client_intent_id="i1",
         account_id="acct",
-        market=MarketRef(condition_id="cond"),
+        market=MarketRef(condition_id="cond", slug=None, is_sports=False),
         token_id="tok",
         side=Side.BUY,
-        quantity=QuantityIntent(max_notional="10"),
+        quantity=QuantityIntent(max_notional="10", max_shares=None),
         limit_price="0.5",
+        time_in_force="GTC",
+        collateral_profile_id=None,
     )
     normalized = client.normalize_intent(intent)
     assert normalized.normalized_intent_id == "n1"

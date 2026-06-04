@@ -37,7 +37,7 @@ def test_quantity_requires_exactly_one_bound():
         QuantityIntent()
     with pytest.raises(ValidationError):
         QuantityIntent(max_notional="10", max_shares="5")
-    assert QuantityIntent(max_notional="10").max_notional == "10"
+    assert QuantityIntent(max_notional="10", max_shares=None).max_notional == "10"
 
 
 def test_quantity_must_be_positive_canonical_decimal():

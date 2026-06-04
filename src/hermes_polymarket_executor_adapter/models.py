@@ -97,8 +97,8 @@ def _parse_sign_only_ref(value: str, *, field: str) -> tuple[str, str, str]:
 
 class MarketRef(FrozenModel):
     condition_id: str
-    slug: str | None = None
-    is_sports: bool = False
+    slug: str | None
+    is_sports: bool
 
     @field_validator("condition_id")
     @classmethod
@@ -107,8 +107,8 @@ class MarketRef(FrozenModel):
 
 
 class QuantityIntent(FrozenModel):
-    max_notional: str | None = None
-    max_shares: str | None = None
+    max_notional: str | None
+    max_shares: str | None
 
     @model_validator(mode="after")
     def exactly_one_bound(self) -> "QuantityIntent":
@@ -133,8 +133,8 @@ class TradeIntent(FrozenModel):
     side: Side
     quantity: QuantityIntent
     limit_price: str
-    time_in_force: TimeInForce = TimeInForce.GTC
-    collateral_profile_id: str | None = None
+    time_in_force: TimeInForce
+    collateral_profile_id: str | None
 
     @field_validator(
         "client_intent_id", "account_id", "token_id", "collateral_profile_id"
@@ -181,8 +181,8 @@ class NormalizedIntent(FrozenModel):
     side: Side
     quantity_bound: QuantityBound
     limit_price: str
-    time_in_force: TimeInForce = TimeInForce.GTC
-    collateral_profile_id: str | None = None
+    time_in_force: TimeInForce
+    collateral_profile_id: str | None
 
     @field_validator("limit_price")
     @classmethod
@@ -198,7 +198,7 @@ class RuntimeStateSummary(FrozenModel):
     worker_status: Literal["HEALTHY", "DEGRADED", "STALE", "UNKNOWN"]
     collateral_profile_status: Literal["RESOLVED", "DEFAULT_RESOLVED", "EXPLICIT_MISSING", "UNKNOWN"]
     kill_switch_enabled: bool
-    required_capabilities: list[str] = Field(default_factory=list)
+    required_capabilities: list[str]
 
 
 class FeasibilitySnapshot(FrozenModel):
@@ -219,7 +219,7 @@ class ConstraintDecision(FrozenModel):
 class ApprovalReceipt(FrozenModel):
     approval_id: str
     approved_by: str
-    approved_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    approved_at: datetime
     expires_at: datetime
     approval_scope: Literal["SHADOW", "CONTROLLED_CANARY", "LIVE_SUBMIT"]
     approval_hash: str
@@ -227,7 +227,7 @@ class ApprovalReceipt(FrozenModel):
     bound_evidence_manifest_sha256: str
     bound_snapshot_hash: str
     bound_decision_hash: str
-    bound_plan_hash: str | None = None
+    bound_plan_hash: str | None
     operator_identity_ref: str
 
     @field_validator(
@@ -274,11 +274,11 @@ class ExecutionPlanSummary(FrozenModel):
     quantity_bound: QuantityBound
     limit_price: str
     time_in_force: TimeInForce
-    collateral_profile_id: str | None = None
+    collateral_profile_id: str | None
     max_exposure: str
     executor_version: str
     contract_version: str
-    explanation: list[str] = Field(default_factory=list)
+    explanation: list[str]
 
     @field_validator("snapshot_hash", "decision_hash", "approval_hash", "plan_hash")
     @classmethod
@@ -378,8 +378,8 @@ class OrderLifecycleRecord(FrozenModel):
     lifecycle_state: OrderLifecycleState
     remote_order_id: str | None
     remote_state: str | None
-    created_at: datetime | None = None
-    updated_at: datetime | None = None
+    created_at: datetime | None
+    updated_at: datetime | None
 
 
 class OrderLifecycleDivergence(FrozenModel):
@@ -435,7 +435,7 @@ class SignOnlyLifecycleRecord(FrozenModel):
     state: SignOnlyLifecycleState
     event: SignOnlyLifecycleEventKind
     client_event_id: str | None = None
-    signed_order_ref: str | None = None
+    signed_order_ref: str | None
     no_remote_side_effect: bool
 
     @field_validator("client_event_id")
@@ -467,7 +467,7 @@ class StandardSignOnlyConstructionRequest(FrozenModel):
     execution_id: str
     account_id: str
     plan_hash: str
-    signed_order_ref: str
+    signed_order_ref: str | None = None
     signed_order_digest: str | None = None
     no_remote_side_effect: bool
 
@@ -504,7 +504,7 @@ class StandardSignOnlyConstructionRequest(FrozenModel):
 class StandardSignOnlyConstructionReceipt(FrozenModel):
     execution_id: str
     signed_order_ref: str
-    signed_order_digest: str | None = None
+    signed_order_digest: str | None
     lifecycle_records: list[SignOnlyLifecycleRecord]
     no_remote_side_effect: bool
 
@@ -524,8 +524,8 @@ class RedactedPayloadEnvelope(FrozenModel):
     schema_version: int
     kind: str
     correlation_id: str | None
-    redacted_fields: list[str] = Field(default_factory=list)
-    body: dict[str, Any] = Field(default_factory=dict)
+    redacted_fields: list[str]
+    body: dict[str, Any]
 
     @model_validator(mode="after")
     def must_be_v1_or_newer(self) -> "RedactedPayloadEnvelope":
@@ -593,7 +593,7 @@ class ReconcileReport(FrozenModel):
     reconcile_id: str
     status: str
     checked_orders: int
-    findings: list[str] = Field(default_factory=list)
+    findings: list[str]
 
     @field_validator("checked_orders")
     @classmethod
@@ -607,7 +607,7 @@ class HealthReport(FrozenModel):
     status: str
     executor_version: str
     contract_version: str
-    checks: dict[str, Any] = Field(default_factory=dict)
+    checks: dict[str, Any]
 
 
 class CanaryEvidenceReference(FrozenModel):

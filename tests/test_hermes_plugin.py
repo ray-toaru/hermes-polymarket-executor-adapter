@@ -432,6 +432,8 @@ def test_prepare_execution_plan_chains_safe_executor_steps(monkeypatch):
                 side=intent.side,
                 quantity_bound={"kind": "WORST_CASE_QUOTE_NOTIONAL", "amount": "10"},
                 limit_price=intent.limit_price,
+                time_in_force=intent.time_in_force,
+                collateral_profile_id=intent.collateral_profile_id,
             )
 
         def capture_snapshot(self, normalized):
@@ -445,6 +447,7 @@ def test_prepare_execution_plan_chains_safe_executor_steps(monkeypatch):
                     worker_status="HEALTHY",
                     collateral_profile_status="RESOLVED",
                     kill_switch_enabled=False,
+                    required_capabilities=[],
                 ),
                 captured_at="2026-05-23T00:00:00Z",
             )
@@ -475,14 +478,15 @@ def test_prepare_execution_plan_chains_safe_executor_steps(monkeypatch):
                 condition_id="cond",
                 token_id="tok",
                 side="BUY",
-                quantity_bound={"kind": "WORST_CASE_QUOTE_NOTIONAL", "amount": "10"},
-                limit_price="0.5",
-                time_in_force="GTC",
-                max_exposure="10",
-                explanation=["fixture ready plan"],
-                executor_version="0.28.0",
-                contract_version="1.0.0-draft",
-            )
+                    quantity_bound={"kind": "WORST_CASE_QUOTE_NOTIONAL", "amount": "10"},
+                    limit_price="0.5",
+                    time_in_force="GTC",
+                    collateral_profile_id=None,
+                    max_exposure="10",
+                    explanation=["fixture ready plan"],
+                    executor_version="0.28.0",
+                    contract_version="1.0.0-draft",
+                )
 
         def close(self):
             pass
@@ -495,13 +499,15 @@ def test_prepare_execution_plan_chains_safe_executor_steps(monkeypatch):
             {
                 "intent": {
                     "client_intent_id": "intent-1",
-                    "account_id": "acct",
-                    "market": {"condition_id": "cond"},
-                    "token_id": "tok",
-                    "side": "BUY",
-                    "quantity": {"max_notional": "10"},
-                    "limit_price": "0.5",
-                },
+                        "account_id": "acct",
+                        "market": {"condition_id": "cond", "slug": None, "is_sports": False},
+                        "token_id": "tok",
+                        "side": "BUY",
+                        "quantity": {"max_notional": "10", "max_shares": None},
+                        "limit_price": "0.5",
+                        "time_in_force": "GTC",
+                        "collateral_profile_id": None,
+                    },
                 "approval": {
                     "approval_id": "approval-1",
                     "approved_by": "operator",
