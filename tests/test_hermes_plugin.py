@@ -172,6 +172,67 @@ def test_register_integrates_with_real_hermes_plugin_context():
             registry.deregister(name)
 
 
+def test_register_uses_injected_handlers_with_real_hermes_plugin_context():
+    adapter_root = Path(__file__).resolve().parents[1]
+    rust_root = adapter_root.parents[1]
+    hermes_agent_root = rust_root / "hermes-agent"
+    if not hermes_agent_root.exists():
+        raise AssertionError(f"missing sibling hermes-agent checkout: {hermes_agent_root}")
+
+    sys.path.insert(0, str(hermes_agent_root))
+    try:
+        from hermes_cli.plugins import PluginContext, PluginManifest
+        from tools.registry import registry
+    finally:
+        sys.path.pop(0)
+
+    from hermes_polymarket_executor_adapter.hermes_plugin import register
+
+    calls = []
+
+    def dry_run_handler(payload):
+        calls.append(payload)
+        return {
+            "ok": True,
+            "tool_name": "dry_run_trade_plan",
+            "kind": "DryRunResult",
+            "executor_called": True,
+            "submitted_live": False,
+            "payload": {"status": "READY"},
+        }
+
+    manifest = PluginManifest(name="polymarket-executor", source="entrypoint", key="polymarket-executor")
+    manager = SimpleNamespace(_plugin_tool_names=set())
+    ctx = PluginContext(manifest, manager)
+    ctx.assistant_v0_handlers = {"dry_run_trade_plan": dry_run_handler}
+    before_tools = set(manager._plugin_tool_names)
+    runtime_registered: set[str] = set()
+    try:
+        register(ctx)
+        runtime_registered = set(manager._plugin_tool_names) - before_tools
+        payload = json.loads(
+            registry.get_entry("dry_run_trade_plan").handler(
+                {
+                    "plan_id": "plan-fixture-001",
+                    "review_reference_id": "review-reference-fixture-001",
+                    "idempotency_key": "dry-run-fixture-001",
+                }
+            )
+        )
+        assert calls == [
+            {
+                "plan_id": "plan-fixture-001",
+                "review_reference_id": "review-reference-fixture-001",
+                "idempotency_key": "dry-run-fixture-001",
+            }
+        ]
+        assert payload["executor_called"] is True
+        assert payload["payload"]["status"] == "READY"
+    finally:
+        for name in runtime_registered:
+            registry.deregister(name)
+
+
 def test_component_compatibility_doc_records_executor_contract():
     compatibility_path = Path(__file__).resolve().parents[1] / "docs" / "COMPONENT_COMPATIBILITY.md"
     text = compatibility_path.read_text(encoding="utf-8")
