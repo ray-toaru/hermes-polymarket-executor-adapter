@@ -224,6 +224,17 @@ def test_sign_only_lifecycle_record_validates_boundary():
 
 
 def test_standard_sign_only_construction_models_validate_redaction_boundary():
+    derived = StandardSignOnlyConstructionRequest(
+        execution_id="exec-derived",
+        account_id="acct",
+        plan_hash=HASH_1,
+        signed_order_ref=None,
+        signed_order_digest=None,
+        no_remote_side_effect=True,
+    )
+    assert derived.signed_order_ref is None
+    assert derived.signed_order_digest is None
+
     request = StandardSignOnlyConstructionRequest(
         execution_id="exec-1",
         account_id="acct",

@@ -473,8 +473,9 @@ class StandardSignOnlyConstructionRequest(FrozenModel):
 
     @field_validator("signed_order_ref")
     @classmethod
-    def signed_order_ref_must_be_redacted(cls, value: str) -> str:
-        _parse_sign_only_ref(value, field="signed_order_ref")
+    def signed_order_ref_must_be_redacted(cls, value: str | None) -> str | None:
+        if value is not None:
+            _parse_sign_only_ref(value, field="signed_order_ref")
         return value
 
     @field_validator("signed_order_digest")
@@ -489,15 +490,16 @@ class StandardSignOnlyConstructionRequest(FrozenModel):
         if not self.no_remote_side_effect:
             raise ValueError("standard sign-only construction must not contain remote side effects")
         _validate_sha256_hex(self.plan_hash, field="plan_hash")
-        ref_execution_id, ref_plan_hash, ref_digest = _parse_sign_only_ref(
-            self.signed_order_ref, field="signed_order_ref"
-        )
-        if ref_execution_id != self.execution_id:
-            raise ValueError("signed_order_ref execution_id must match execution_id")
-        if ref_plan_hash != self.plan_hash:
-            raise ValueError("signed_order_ref plan_hash must match plan_hash")
-        if self.signed_order_digest is not None and ref_digest != self.signed_order_digest:
-            raise ValueError("signed_order_ref digest must match signed_order_digest")
+        if self.signed_order_ref is not None:
+            ref_execution_id, ref_plan_hash, ref_digest = _parse_sign_only_ref(
+                self.signed_order_ref, field="signed_order_ref"
+            )
+            if ref_execution_id != self.execution_id:
+                raise ValueError("signed_order_ref execution_id must match execution_id")
+            if ref_plan_hash != self.plan_hash:
+                raise ValueError("signed_order_ref plan_hash must match plan_hash")
+            if self.signed_order_digest is not None and ref_digest != self.signed_order_digest:
+                raise ValueError("signed_order_ref digest must match signed_order_digest")
         return self
 
 

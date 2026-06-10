@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import sys
 import tomllib
@@ -14,6 +15,14 @@ class FakeContext:
 
     def register_tool(self, **kwargs):
         self.tools[kwargs["name"]] = kwargs
+
+
+def hermes_agent_root() -> Path:
+    configured = os.environ.get("HERMES_AGENT_ROOT")
+    if configured:
+        return Path(configured).resolve()
+    adapter_root = Path(__file__).resolve().parents[1]
+    return adapter_root.parents[1] / "hermes-agent"
 
 
 def test_pyproject_exposes_hermes_plugin_entrypoint():
@@ -159,13 +168,11 @@ def test_register_builds_assistant_v0_specs_via_contract_loader(monkeypatch):
 
 
 def test_register_integrates_with_real_hermes_plugin_context():
-    adapter_root = Path(__file__).resolve().parents[1]
-    rust_root = adapter_root.parents[1]
-    hermes_agent_root = rust_root / "hermes-agent"
-    if not hermes_agent_root.exists():
-        raise AssertionError(f"missing sibling hermes-agent checkout: {hermes_agent_root}")
+    agent_root = hermes_agent_root()
+    if not agent_root.exists():
+        raise AssertionError(f"missing Hermes Agent checkout: {agent_root}")
 
-    sys.path.insert(0, str(hermes_agent_root))
+    sys.path.insert(0, str(agent_root))
     try:
         from hermes_cli.plugins import PluginContext, PluginManifest
         from tools.registry import registry
@@ -199,13 +206,11 @@ def test_register_integrates_with_real_hermes_plugin_context():
 
 
 def test_register_uses_injected_handlers_with_real_hermes_plugin_context():
-    adapter_root = Path(__file__).resolve().parents[1]
-    rust_root = adapter_root.parents[1]
-    hermes_agent_root = rust_root / "hermes-agent"
-    if not hermes_agent_root.exists():
-        raise AssertionError(f"missing sibling hermes-agent checkout: {hermes_agent_root}")
+    agent_root = hermes_agent_root()
+    if not agent_root.exists():
+        raise AssertionError(f"missing Hermes Agent checkout: {agent_root}")
 
-    sys.path.insert(0, str(hermes_agent_root))
+    sys.path.insert(0, str(agent_root))
     try:
         from hermes_cli.plugins import PluginContext, PluginManifest
         from tools.registry import registry
