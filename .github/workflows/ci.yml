@@ -63,7 +63,7 @@ jobs:
         env:
           PYTHONPATH: src
           HERMES_AGENT_ROOT: ${{ github.workspace }}/hermes-agent
-        run: python -m pytest -q
+        run: python -m pytest -q tests
 
       - name: Lint sources
         run: python -m ruff check src tests
