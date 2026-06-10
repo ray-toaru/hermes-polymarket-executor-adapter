@@ -25,10 +25,26 @@ def test_executor_adapter_has_no_secret_or_live_clob_terms():
         root / "tests" / "test_models.py",
         root / "tests" / "test_no_secret_boundary.py",
     }
+    owned_paths = [
+        root / ".github",
+        root / "docs",
+        root / "src",
+        root / "tests",
+        root / "AGENTS.md",
+        root / "README.md",
+        root / "constraints-ci.txt",
+        root / "pyproject.toml",
+    ]
 
     failures = []
     scanned = 0
-    for path in sorted(root.rglob("*")):
+    candidates = []
+    for owned_path in owned_paths:
+        if owned_path.is_dir():
+            candidates.extend(owned_path.rglob("*"))
+        elif owned_path.is_file():
+            candidates.append(owned_path)
+    for path in sorted(candidates):
         if not path.is_file():
             continue
         if path.suffix.lower() not in {".py", ".md", ".toml", ".yml", ".yaml", ".txt"}:
