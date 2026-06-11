@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import os
 from urllib.parse import urlparse
 
@@ -8,8 +8,8 @@ from urllib.parse import urlparse
 @dataclass(frozen=True)
 class ExecutorConfig:
     base_url: str
-    service_token: str
-    admin_token: str | None = None
+    service_token: str = field(repr=False)
+    admin_token: str | None = field(default=None, repr=False)
     timeout_seconds: float = 10.0
 
     def __post_init__(self) -> None:
@@ -18,6 +18,8 @@ class ExecutorConfig:
             raise ValueError("executor base_url must be an absolute http(s) URL")
         if self.timeout_seconds <= 0:
             raise ValueError("executor timeout_seconds must be positive")
+        if self.admin_token is not None and self.admin_token == self.service_token:
+            raise ValueError("executor admin_token must be distinct from service_token")
         object.__setattr__(self, "base_url", self.base_url.rstrip("/"))
 
     @classmethod

@@ -25,7 +25,6 @@ on:
 
 permissions:
   contents: read
-  actions: write
 
 env:
   HERMES_PROFILE: hm-pdp-test

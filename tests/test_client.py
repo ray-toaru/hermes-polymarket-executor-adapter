@@ -30,6 +30,28 @@ def test_executor_config_rejects_relative_base_url():
         ExecutorConfig(base_url="/relative", service_token="svc")
 
 
+def test_executor_config_repr_redacts_tokens():
+    config = ExecutorConfig(
+        base_url="http://executor",
+        service_token="service-secret",
+        admin_token="admin-secret",
+    )
+
+    rendered = repr(config)
+
+    assert "service-secret" not in rendered
+    assert "admin-secret" not in rendered
+
+
+def test_executor_config_requires_distinct_service_and_admin_tokens():
+    with pytest.raises(ValueError, match="must be distinct"):
+        ExecutorConfig(
+            base_url="http://executor",
+            service_token="shared-secret",
+            admin_token="shared-secret",
+        )
+
+
 def test_get_paths_url_encode_identifiers(monkeypatch):
     captured = {}
 

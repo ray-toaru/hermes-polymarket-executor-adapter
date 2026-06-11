@@ -1,0 +1,31 @@
+name: Bug report
+description: Report an adapter defect using synthetic or redacted data.
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Never include tokens, keys, signatures, account identifiers, or production data.
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Observed and expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction and commit SHA
+    validations:
+      required: true
+  - type: dropdown
+    id: boundary
+    attributes:
+      label: Boundary impact
+      options:
+        - No credential or authorization impact
+        - Credential handling
+        - Authorization or execution boundary
+        - Unknown
+    validations:
+      required: true
