@@ -7,6 +7,7 @@ import httpx
 
 from .config import ExecutorConfig
 from .models import (
+    AdminSession,
     AdminAuditEvent,
     ApprovalReceipt,
     CancelReceipt,
@@ -332,6 +333,31 @@ class ExecutorClient:
             correlation_id=correlation_id,
         )
         return [AdminAuditEvent.model_validate(item) for item in payload]
+
+    def verify_admin_session(
+        self,
+        *,
+        expected_subject: str,
+        required_capabilities: set[str],
+        correlation_id: str | None = None,
+    ) -> AdminSession:
+        session = AdminSession.model_validate(
+            self._get(
+                "/v1/admin/session",
+                admin=True,
+                correlation_id=correlation_id,
+            )
+        )
+        if session.principal_subject != expected_subject:
+            raise PermissionError(
+                "admin subject mismatch: executor did not authenticate the expected subject"
+            )
+        missing = required_capabilities.difference(session.capabilities)
+        if missing:
+            raise PermissionError(
+                "missing required admin capabilities: " + ", ".join(sorted(missing))
+            )
+        return session
 
     def cancel_order(
         self,

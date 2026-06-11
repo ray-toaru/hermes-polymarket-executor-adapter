@@ -105,6 +105,109 @@ def test_admin_operation_requires_admin_token():
     client.close()
 
 
+def test_verify_admin_session_checks_subject_and_capabilities(monkeypatch):
+    captured = {}
+
+    def fake_get(self, url, headers):
+        captured["url"] = url
+        captured["headers"] = headers
+        return httpx.Response(
+            200,
+            request=httpx.Request("GET", url),
+            json={
+                "principal_subject": "admin-token",
+                "scopes": ["ADMIN"],
+                "capabilities": [
+                    "READ_AUDIT",
+                    "CANCEL_ORDER",
+                    "CANCEL_MARKET",
+                    "RECONCILE",
+                    "KILL_SWITCH",
+                ],
+                "no_remote_side_effect": True,
+            },
+        )
+
+    monkeypatch.setattr(httpx.Client, "get", fake_get)
+    client = ExecutorClient(
+        ExecutorConfig(
+            base_url="http://executor",
+            service_token="svc",
+            admin_token="admin",
+        )
+    )
+
+    session = client.verify_admin_session(
+        expected_subject="admin-token",
+        required_capabilities={"READ_AUDIT", "KILL_SWITCH"},
+    )
+
+    assert session.principal_subject == "admin-token"
+    assert captured["url"] == "http://executor/v1/admin/session"
+    assert captured["headers"]["Authorization"] == "Bearer admin"
+    client.close()
+
+
+def test_verify_admin_session_fails_closed_on_subject_mismatch(monkeypatch):
+    def fake_get(self, url, headers):
+        return httpx.Response(
+            200,
+            request=httpx.Request("GET", url),
+            json={
+                "principal_subject": "unexpected-admin",
+                "scopes": ["ADMIN"],
+                "capabilities": ["READ_AUDIT"],
+                "no_remote_side_effect": True,
+            },
+        )
+
+    monkeypatch.setattr(httpx.Client, "get", fake_get)
+    client = ExecutorClient(
+        ExecutorConfig(
+            base_url="http://executor",
+            service_token="svc",
+            admin_token="admin",
+        )
+    )
+
+    with pytest.raises(PermissionError, match="admin subject mismatch"):
+        client.verify_admin_session(
+            expected_subject="admin-token",
+            required_capabilities={"READ_AUDIT"},
+        )
+    client.close()
+
+
+def test_verify_admin_session_fails_closed_on_missing_capability(monkeypatch):
+    def fake_get(self, url, headers):
+        return httpx.Response(
+            200,
+            request=httpx.Request("GET", url),
+            json={
+                "principal_subject": "admin-token",
+                "scopes": ["ADMIN"],
+                "capabilities": ["READ_AUDIT"],
+                "no_remote_side_effect": True,
+            },
+        )
+
+    monkeypatch.setattr(httpx.Client, "get", fake_get)
+    client = ExecutorClient(
+        ExecutorConfig(
+            base_url="http://executor",
+            service_token="svc",
+            admin_token="admin",
+        )
+    )
+
+    with pytest.raises(PermissionError, match="missing required admin capabilities"):
+        client.verify_admin_session(
+            expected_subject="admin-token",
+            required_capabilities={"READ_AUDIT", "KILL_SWITCH"},
+        )
+    client.close()
+
+
 def test_submit_plan_posts_explicit_mode(monkeypatch):
     captured = {}
 

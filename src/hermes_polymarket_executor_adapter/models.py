@@ -558,6 +558,32 @@ class AdminAuditEvent(FrozenModel):
     result: str
 
 
+AdminCapability = Literal[
+    "READ_AUDIT",
+    "CANCEL_ORDER",
+    "CANCEL_MARKET",
+    "RECONCILE",
+    "KILL_SWITCH",
+]
+
+
+class AdminSession(FrozenModel):
+    principal_subject: str
+    scopes: list[Literal["ADMIN"]]
+    capabilities: list[AdminCapability]
+    no_remote_side_effect: bool
+
+    @model_validator(mode="after")
+    def must_be_admin_and_read_only(self) -> "AdminSession":
+        if not self.principal_subject.strip():
+            raise ValueError("admin principal_subject must not be blank")
+        if self.scopes != ["ADMIN"]:
+            raise ValueError("admin session must contain only the ADMIN scope")
+        if not self.no_remote_side_effect:
+            raise ValueError("admin session probe must not have remote side effects")
+        return self
+
+
 class KillSwitchReceipt(FrozenModel):
     scope: str
     account_id: str | None = None
