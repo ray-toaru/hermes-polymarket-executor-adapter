@@ -31,7 +31,8 @@ own executor risk policy.
   repository responsibility boundary.
 - Boundary remains no signing, no direct CLOB, no executor database credentials,
   and no release/canary governance ownership.
-- Tests pass in this environment.
+- CI and local validation should run the checks listed below before publishing
+  adapter changes.
 
 ## Hermes plugin
 
@@ -69,12 +70,19 @@ adapter does not permit live submit mode.
 
 ```bash
 PYTHONPATH=src python -m pytest -q
+PYTHONPATH=src python scripts/check_openapi_parity.py /path/to/polymarket-execution-engine/openapi/executor.v1.yaml
+python -m ruff check src tests
+python -m mypy src
+python -m bandit -q -r src
 PYTHONPATH=src python -m compileall -q src tests
+python -m build --sdist --wheel
 pmx-executor-adapter --help
 ```
 
-Cross-repository OpenAPI parity is validated from the integration repository that checks out this
-repo alongside `polymarket-execution-engine`.
+Adapter CI checks out a pinned execution-engine commit and validates Pydantic
+field, required-field, and `additionalProperties` parity against
+`executor.v1.yaml`. The integration repository repeats the check against the
+submodule commits selected for a suite release.
 Adapter-local contract compatibility is tracked in
 `docs/COMPONENT_COMPATIBILITY.md`.
 

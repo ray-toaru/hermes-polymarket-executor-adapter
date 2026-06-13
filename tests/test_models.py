@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+
 import pytest
 from pydantic import ValidationError
 
@@ -359,6 +361,14 @@ def test_execution_lifecycle_payload_requires_redacted_envelope():
                 "body": {"api_secret": "secret"},
             },
         )
+    with pytest.raises(ValidationError):
+        RedactedPayloadEnvelope(
+            schema_version=1,
+            kind="bad",
+            correlation_id=None,
+            redacted_fields=["message"],
+            body={"message": "api_secret=redacted-value-should-not-pass"},
+        )
 
 
 def test_reconcile_order_local_response_validates_local_only_boundary():
@@ -459,6 +469,36 @@ def test_approval_receipt_and_canary_approval_require_future_expiry():
             approval_hash=HASH_1,
             scope="REAL_FUNDS_CANARY",
             expires_at="2000-01-01T00:00:00Z",
+            operator_identity_ref="operator-ref",
+        )
+
+
+def test_approval_datetime_fields_require_timezone():
+    future_naive = datetime.now() + timedelta(days=1)
+    past_naive = datetime.now() - timedelta(days=1)
+    future_aware = datetime.now(timezone.utc) + timedelta(days=1)
+
+    with pytest.raises(ValidationError, match="approved_at must include timezone"):
+        ApprovalReceipt(
+            approval_id="approval-1",
+            approved_by="operator",
+            approved_at=past_naive,
+            expires_at=future_aware,
+            approval_scope="CONTROLLED_CANARY",
+            approval_hash=HASH_1,
+            bound_artifact_sha256=HASH_1,
+            bound_evidence_manifest_sha256=HASH_1,
+            bound_snapshot_hash=HASH_1,
+            bound_decision_hash=HASH_1,
+            bound_plan_hash=HASH_1,
+            operator_identity_ref="operator-ref",
+        )
+    with pytest.raises(ValidationError, match="expires_at must include timezone"):
+        CanaryApprovalReference(
+            approval_id="approval-1",
+            approval_hash=HASH_1,
+            scope="REAL_FUNDS_CANARY",
+            expires_at=future_naive,
             operator_identity_ref="operator-ref",
         )
 

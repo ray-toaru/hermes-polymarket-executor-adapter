@@ -14,6 +14,10 @@ _SECRET_BEARING_KEY_RE = re.compile(
     r"(private[_-]?key|api[_-]?secret|api[_-]?passphrase|clob[_-]?secret|raw[_-]?signature|raw[_-]?signed[_-]?payload)",
     re.IGNORECASE,
 )
+_SECRET_BEARING_VALUE_RE = re.compile(
+    r"(private[_-]?key|api[_-]?secret|api[_-]?passphrase|clob[_-]?secret|raw[_-]?signature|raw[_-]?signed[_-]?payload)\s*[:=]",
+    re.IGNORECASE,
+)
 
 
 class FrozenModel(BaseModel):
@@ -79,6 +83,22 @@ def _contains_secret_bearing_keys(value: Any) -> bool:
     if isinstance(value, list):
         return any(_contains_secret_bearing_keys(item) for item in value)
     return False
+
+
+def _contains_secret_bearing_values(value: Any) -> bool:
+    if isinstance(value, dict):
+        return any(_contains_secret_bearing_values(nested) for nested in value.values())
+    if isinstance(value, list):
+        return any(_contains_secret_bearing_values(item) for item in value)
+    if isinstance(value, str):
+        return bool(_SECRET_BEARING_VALUE_RE.search(value))
+    return False
+
+
+def _require_timezone_aware(value: datetime, *, field: str) -> datetime:
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError(f"{field} must include timezone information")
+    return value
 
 
 def _parse_sign_only_ref(value: str, *, field: str) -> tuple[str, str, str]:
@@ -246,12 +266,14 @@ class ApprovalReceipt(FrozenModel):
 
     @model_validator(mode="after")
     def expiry_must_follow_approval_time(self) -> ApprovalReceipt:
+        approved_at = _require_timezone_aware(self.approved_at, field="approved_at")
+        expires_at = _require_timezone_aware(self.expires_at, field="expires_at")
         now = datetime.now(timezone.utc)
-        if self.approved_at > now:
+        if approved_at > now:
             raise ValueError("approved_at must not be in the future")
-        if self.expires_at <= self.approved_at:
+        if expires_at <= approved_at:
             raise ValueError("expires_at must be later than approved_at")
-        if self.expires_at <= now:
+        if expires_at <= now:
             raise ValueError("expires_at must be in the future")
         return self
 
@@ -535,6 +557,8 @@ class RedactedPayloadEnvelope(FrozenModel):
             raise ValueError("redacted payload schema_version must be >= 1")
         if _contains_secret_bearing_keys(self.body):
             raise ValueError("redacted payload body must not contain secret-bearing keys")
+        if _contains_secret_bearing_values(self.body):
+            raise ValueError("redacted payload body must not contain secret-bearing values")
         return self
 
 
@@ -664,7 +688,8 @@ class CanaryApprovalReference(FrozenModel):
 
     @model_validator(mode="after")
     def expires_at_must_be_future(self) -> "CanaryApprovalReference":
-        if self.expires_at <= datetime.now(timezone.utc):
+        expires_at = _require_timezone_aware(self.expires_at, field="expires_at")
+        if expires_at <= datetime.now(timezone.utc):
             raise ValueError("expires_at must be in the future")
         return self
 

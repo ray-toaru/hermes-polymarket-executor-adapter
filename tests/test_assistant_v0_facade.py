@@ -26,7 +26,7 @@ def test_registers_assistant_v0_facade_without_forbidden_tools():
         "get_execution_status",
     }
     assert not (FORBIDDEN_TOOL_NAMES & set(ctx.tools))
-    assert all(meta["requires_env"] == ["PM_EXEC_SERVICE_TOKEN"] for meta in facade_tools.values())
+    assert all(meta["requires_env"] == [] for meta in facade_tools.values())
     assert "review reference" in facade_tools["dry_run_trade_plan"]["description"]
     assert "authorization" not in facade_tools["dry_run_trade_plan"]["description"].lower()
 
@@ -74,7 +74,8 @@ def test_default_dry_run_facade_response_is_blocked_and_non_live():
         },
     )
 
-    assert result["ok"] is True
+    assert result["ok"] is False
+    assert result["code"] == "STUB_NOT_BOUND"
     assert result["kind"] == "DryRunResult"
     assert result["executor_mode"] == DRY_RUN_FIXED_EXECUTOR_MODE
     assert result["payload"]["status"] == "BLOCKED"

@@ -109,5 +109,7 @@ Status: evaluated, not implemented.
 3. Update supported executor contract notes if the execution-engine API changes
    before the v0.28 suite release.
 4. Validate the plugin inside the target Hermes profile from the integration
-   repository root with `cd /path/to/polymarket-execution-suite && python
-   scripts/check_hermes_profile_plugin.py --profile-cmd <local-profile-command>`.
+   repository root, or invoke the adapter wrapper with `python
+   scripts/check_hermes_profile_plugin.py --suite-root
+   /path/to/polymarket-execution-suite --profile-cmd
+   <local-profile-command>`.

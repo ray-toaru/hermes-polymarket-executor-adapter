@@ -122,8 +122,9 @@ def handle_get_execution_status(args: dict, **_kwargs) -> str:
 def _handle_risk_review_trade_plan(payload: dict[str, Any]) -> dict[str, Any]:
     plan_id = str(payload["plan_id"])
     return {
-        "ok": True,
+        "ok": False,
         "tool_name": "risk_review_trade_plan",
+        "code": "STUB_NOT_BOUND",
         "kind": "RiskReview",
         "executor_called": False,
         "submitted_live": False,
@@ -149,8 +150,9 @@ def _handle_risk_review_trade_plan(payload: dict[str, Any]) -> dict[str, Any]:
 def _handle_dry_run_trade_plan(payload: dict[str, Any]) -> dict[str, Any]:
     plan_id = str(payload["plan_id"])
     return {
-        "ok": True,
+        "ok": False,
         "tool_name": "dry_run_trade_plan",
+        "code": "STUB_NOT_BOUND",
         "kind": "DryRunResult",
         "executor_mode": assistant_v0_executor_mode_for("dry_run_trade_plan"),
         "executor_called": False,
@@ -171,8 +173,9 @@ def _handle_dry_run_trade_plan(payload: dict[str, Any]) -> dict[str, Any]:
 def _handle_get_execution_status(payload: dict[str, Any]) -> dict[str, Any]:
     plan_id = str(payload["plan_id"])
     return {
-        "ok": True,
+        "ok": False,
         "tool_name": "get_execution_status",
+        "code": "STUB_NOT_BOUND",
         "kind": "ExecutionStatus",
         "executor_called": False,
         "submitted_live": False,

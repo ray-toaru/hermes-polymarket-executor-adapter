@@ -213,7 +213,7 @@ class ExecutorClient:
     ) -> SubmitReceipt:
         if mode != "BLOCKED_DRY_RUN":
             raise ValueError("adapter submit_plan only supports BLOCKED_DRY_RUN")
-        return SubmitReceipt.model_validate(
+        receipt = SubmitReceipt.model_validate(
             self._post(
                 "/v1/submissions",
                 {
@@ -225,6 +225,11 @@ class ExecutorClient:
                 correlation_id=correlation_id,
             )
         )
+        if receipt.status not in {"BLOCKED", "REJECTED"}:
+            raise ValueError(
+                "adapter submit_plan only accepts blocked or rejected dry-run receipts"
+            )
+        return receipt
 
     def get_submission(self, execution_id: str) -> SubmitReceipt:
         return SubmitReceipt.model_validate(

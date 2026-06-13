@@ -2,7 +2,23 @@
 name = "hermes-polymarket-executor-adapter"
 version = "0.28.0"
 description = "Hermes-compatible executor adapter for a standalone Polymarket execution engine"
+readme = "README.md"
 requires-python = ">=3.11"
+license = "LicenseRef-Proprietary"
+authors = [
+  { name = "ray-toaru" },
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Typing :: Typed",
+]
 dependencies = [
   "httpx==0.28.1",
   "pydantic==2.13.4",
@@ -18,7 +34,7 @@ polymarket-executor = "hermes_polymarket_executor_adapter.hermes_plugin"
 pmx-executor-adapter = "hermes_polymarket_executor_adapter.cli:main"
 
 [build-system]
-requires = ["setuptools>=82.0.1", "wheel>=0.46.3"]
+requires = ["setuptools>=82.0.1", "wheel>=0.47.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]

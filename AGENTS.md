@@ -24,14 +24,25 @@ From this directory:
 
 ```bash
 PYTHONPATH=src python -m pytest -q
+PYTHONPATH=src python scripts/check_openapi_parity.py /path/to/polymarket-execution-engine/openapi/executor.v1.yaml
+python -m ruff check src tests
+python -m mypy src
+python -m bandit -q -r src
 PYTHONPATH=src python -m compileall -q src tests
+python -m build --sdist --wheel
+python -m pip install --force-reinstall dist/*.whl
+pmx-executor-adapter --help
 ```
 
 From the integration repository root, when this repository is checked out as `hermes-polymarket-executor-adapter`:
 
 ```bash
 PYTHONPATH=hermes-polymarket-executor-adapter/src python -m pytest -q hermes-polymarket-executor-adapter/tests
+python -m ruff check hermes-polymarket-executor-adapter/src hermes-polymarket-executor-adapter/tests
+python -m mypy hermes-polymarket-executor-adapter/src
+python -m bandit -q -r hermes-polymarket-executor-adapter/src
 python -m compileall -q hermes-polymarket-executor-adapter/src hermes-polymarket-executor-adapter/tests
+PYTHONPATH=hermes-polymarket-executor-adapter/src python hermes-polymarket-executor-adapter/scripts/check_openapi_parity.py polymarket-execution-engine/openapi/executor.v1.yaml
 ```
 
 ## Documentation

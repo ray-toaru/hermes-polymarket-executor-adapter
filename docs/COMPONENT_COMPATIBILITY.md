@@ -13,7 +13,7 @@ submodule commits or release evidence.
 | Executor HTTP contract | `executor.v1` | Public executor API contract exposed by `polymarket-execution-engine/openapi/executor.v1.yaml`. |
 | Assistant contract | `assistant-v0` | Safe-session assistant facade contract enforced by `assistant_v0_contracts.py` and the manifest loader. |
 | Hermes plugin entry point | `polymarket-executor` | Python package entry point under `hermes_agent.plugins`. |
-| Python runtime | `>=3.11` | CI currently exercises 3.11, 3.12, and 3.13. |
+| Python runtime | `>=3.11` | CI currently exercises 3.11, 3.12, 3.13, and 3.14. |
 
 ## Compatibility Rules
 
@@ -29,6 +29,9 @@ submodule commits or release evidence.
   - client helpers
   - compatibility claims in this file
   - tests that validate contract conformance
+- Adapter CI validates model parity against the execution-engine commit pinned
+  in `.github/workflows/ci.yml`. Suite release evidence must additionally bind
+  the adapter and engine submodule commits selected by the integration repo.
 
 ## Non-Goals
 

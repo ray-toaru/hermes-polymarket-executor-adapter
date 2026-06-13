@@ -31,6 +31,10 @@ def test_pyproject_exposes_hermes_plugin_entrypoint():
         project = tomllib.load(fh)
 
     assert project["project"]["requires-python"] == ">=3.11"
+    assert project["project"]["readme"] == "README.md"
+    assert project["project"]["license"] == "LicenseRef-Proprietary"
+    assert project["project"]["authors"] == [{"name": "ray-toaru"}]
+    assert "Operating System :: OS Independent" in project["project"]["classifiers"]
     assert project["project"]["dependencies"] == [
         "httpx==0.28.1",
         "pydantic==2.13.4",
@@ -102,8 +106,10 @@ def test_registers_service_and_admin_tools():
     assert ctx.tools["polymarket_executor_health"]["toolset"] == "polymarket_executor"
     assert ctx.tools["polymarket_admin_cancel_order"]["toolset"] == "polymarket_executor_admin"
     assert ctx.tools["polymarket_admin_cancel_order"]["requires_env"] == [
+        "PM_EXEC_SERVICE_URL",
         "PM_EXEC_SERVICE_TOKEN",
         "PM_EXEC_ADMIN_TOKEN",
+        "PM_EXEC_ADMIN_SUBJECT",
     ]
     forbidden = {"submit_plan", "post_order", "cancel_live_order", "approve_trade_plan"}
     assert not (forbidden & set(ctx.tools))
@@ -274,22 +280,24 @@ def test_component_compatibility_doc_records_executor_contract():
     assert "`polymarket-executor`" in text
 
 
-def test_plugin_docs_reference_integration_root_script_location():
+def test_plugin_docs_reference_explicit_suite_location():
     docs_root = Path(__file__).resolve().parents[1] / "docs"
     hermes_plugin = (docs_root / "HERMES_PLUGIN.md").read_text(encoding="utf-8")
     roadmap = (docs_root / "ROADMAP.md").read_text(encoding="utf-8")
 
     assert "cd /path/to/polymarket-execution-suite" in hermes_plugin
-    assert "cd /path/to/polymarket-execution-suite" in roadmap
+    assert "--suite-root /path/to/polymarket-execution-suite" in hermes_plugin
+    assert "--suite-root" in roadmap
     assert "python scripts/check_hermes_profile_plugin.py" in hermes_plugin
 
 
-def test_adapter_repo_includes_profile_check_wrapper_script():
+def test_adapter_repo_profile_check_wrapper_requires_explicit_suite_location():
     script = Path(__file__).resolve().parents[1] / "scripts" / "check_hermes_profile_plugin.py"
     text = script.read_text(encoding="utf-8")
-    assert 'runpy.run_path' in text
+    assert '"--suite-root"' in text
+    assert '"PMX_SUITE_ROOT"' in text
     assert 'check_hermes_profile_plugin.py' in text
-    assert 'parents[2]' in text
+    assert "subprocess.run" in text
 
 
 def test_adapter_repo_has_no_stale_executor_version_fixtures():
@@ -311,19 +319,28 @@ def test_adapter_repo_has_no_stale_executor_version_fixtures():
 def test_service_availability_requires_service_token(monkeypatch):
     from hermes_polymarket_executor_adapter.hermes_handlers import check_executor_available
 
+    monkeypatch.delenv("PM_EXEC_SERVICE_URL", raising=False)
     monkeypatch.delenv("PM_EXEC_SERVICE_TOKEN", raising=False)
     assert check_executor_available() is False
     monkeypatch.setenv("PM_EXEC_SERVICE_TOKEN", "svc")
+    assert check_executor_available() is False
+    monkeypatch.setenv("PM_EXEC_SERVICE_URL", "not-a-url")
+    assert check_executor_available() is False
+    monkeypatch.setenv("PM_EXEC_SERVICE_URL", "http://executor")
     assert check_executor_available() is True
 
 
 def test_admin_availability_requires_service_and_admin_tokens(monkeypatch):
     from hermes_polymarket_executor_adapter.hermes_handlers import check_admin_available
 
+    monkeypatch.setenv("PM_EXEC_SERVICE_URL", "http://executor")
     monkeypatch.setenv("PM_EXEC_SERVICE_TOKEN", "svc")
     monkeypatch.delenv("PM_EXEC_ADMIN_TOKEN", raising=False)
+    monkeypatch.delenv("PM_EXEC_ADMIN_SUBJECT", raising=False)
     assert check_admin_available() is False
     monkeypatch.setenv("PM_EXEC_ADMIN_TOKEN", "admin")
+    assert check_admin_available() is False
+    monkeypatch.setenv("PM_EXEC_ADMIN_SUBJECT", "admin-subject")
     assert check_admin_available() is True
 
 
@@ -378,6 +395,13 @@ def test_admin_cancel_handler_requires_reason_and_uses_client(monkeypatch):
             )
             return CancelReceipt(cancel_id="cancel-1", order_id=order_id, state="RECONCILE_REQUIRED")
 
+        def verify_admin_session(self, *, expected_subject, required_capabilities, correlation_id=None):
+            captured.update(
+                expected_subject=expected_subject,
+                required_capabilities=required_capabilities,
+                verify_correlation_id=correlation_id,
+            )
+
         def close(self):
             pass
 
@@ -388,6 +412,7 @@ def test_admin_cancel_handler_requires_reason_and_uses_client(monkeypatch):
 
     monkeypatch.setattr(hermes_handlers.ExecutorConfig, "from_env", classmethod(lambda cls: "cfg"))
     monkeypatch.setattr(hermes_handlers, "ExecutorClient", FakeClient)
+    monkeypatch.setenv("PM_EXEC_ADMIN_SUBJECT", "admin-subject")
     payload = json.loads(
         hermes_handlers.handle_admin_cancel_order(
             {
@@ -407,7 +432,92 @@ def test_admin_cancel_handler_requires_reason_and_uses_client(monkeypatch):
         "reason": "operator requested",
         "execution_id": "exec-1",
         "correlation_id": "corr-1",
+        "expected_subject": "admin-subject",
+        "required_capabilities": {"CANCEL_ORDER"},
+        "verify_correlation_id": "corr-1",
     }
+
+
+def test_with_client_returns_structured_config_error(monkeypatch):
+    from hermes_polymarket_executor_adapter import hermes_handlers
+
+    monkeypatch.delenv("PM_EXEC_SERVICE_URL", raising=False)
+    monkeypatch.setenv("PM_EXEC_SERVICE_TOKEN", "svc")
+
+    payload = json.loads(hermes_handlers.handle_executor_health({}))
+
+    assert payload["code"] == "CONFIG_MISSING_SERVICE_URL"
+    assert "PM_EXEC_SERVICE_URL is required" in payload["error"]
+
+
+def test_admin_kill_switch_rejects_non_boolean_enabled():
+    from hermes_polymarket_executor_adapter import hermes_handlers
+
+    payload = json.loads(
+        hermes_handlers.handle_admin_kill_switch(
+            {"account_id": "acct", "enabled": "false", "reason": "operator requested"}
+        )
+    )
+
+    assert payload["error"] == "enabled must be a boolean"
+
+
+def test_compile_plan_handler_rejects_live_submit_approval_scope():
+    from hermes_polymarket_executor_adapter import hermes_handlers
+
+    payload = json.loads(
+        hermes_handlers.handle_compile_plan(
+            {
+                "normalized": {
+                    "normalized_intent_id": "norm-1",
+                    "intent_hash": "intent-hash",
+                    "account_id": "acct",
+                    "market": {"condition_id": "cond", "slug": None, "is_sports": False},
+                    "token_id": "tok",
+                    "side": "BUY",
+                    "quantity_bound": {"kind": "WORST_CASE_QUOTE_NOTIONAL", "amount": "10"},
+                    "limit_price": "0.5",
+                    "time_in_force": "GTC",
+                    "collateral_profile_id": None,
+                },
+                "snapshot": {
+                    "snapshot_id": "snap-1",
+                    "snapshot_hash": "a" * 64,
+                    "normalized_intent_id": "norm-1",
+                    "runtime_state": {
+                        "geoblock_status": "ALLOWED",
+                        "worker_status": "HEALTHY",
+                        "collateral_profile_status": "RESOLVED",
+                        "kill_switch_enabled": False,
+                        "required_capabilities": [],
+                    },
+                    "captured_at": "2026-05-23T00:00:00Z",
+                },
+                "decision": {
+                    "decision_id": "dec-1",
+                    "decision_hash": "b" * 64,
+                    "status": "ALLOW",
+                    "reasons": [],
+                },
+                "approval": {
+                    "approval_id": "approval-1",
+                    "approved_by": "operator",
+                    "approved_at": "2026-05-23T00:00:00Z",
+                    "expires_at": "2099-01-01T00:00:00Z",
+                    "approval_scope": "LIVE_SUBMIT",
+                    "approval_hash": "c" * 64,
+                    "bound_artifact_sha256": "d" * 64,
+                    "bound_evidence_manifest_sha256": "e" * 64,
+                    "bound_snapshot_hash": "a" * 64,
+                    "bound_decision_hash": "b" * 64,
+                    "bound_plan_hash": "f" * 64,
+                    "operator_identity_ref": "operator-ref",
+                },
+            }
+        )
+    )
+
+    assert "LIVE_SUBMIT approval_scope is not accepted" in payload["error"]
 
 
 def test_prepare_execution_plan_chains_safe_executor_steps(monkeypatch):

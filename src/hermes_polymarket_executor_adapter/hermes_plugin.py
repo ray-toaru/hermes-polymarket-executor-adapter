@@ -5,8 +5,8 @@ from . import hermes_handlers as handlers
 from . import hermes_schemas as schemas
 
 
-SERVICE_ENV = ["PM_EXEC_SERVICE_TOKEN"]
-ADMIN_ENV = ["PM_EXEC_SERVICE_TOKEN", "PM_EXEC_ADMIN_TOKEN"]
+SERVICE_ENV = ["PM_EXEC_SERVICE_URL", "PM_EXEC_SERVICE_TOKEN"]
+ADMIN_ENV = ["PM_EXEC_SERVICE_URL", "PM_EXEC_SERVICE_TOKEN", "PM_EXEC_ADMIN_TOKEN", "PM_EXEC_ADMIN_SUBJECT"]
 
 
 def register(ctx) -> None:
@@ -140,7 +140,7 @@ def _register_assistant_v0_tool(
         toolset=assistant_v0_facade.ASSISTANT_V0_TOOLSET,
         schema=spec.schema,
         handler=spec.handler,
-        check_fn=handlers.check_executor_available,
-        requires_env=SERVICE_ENV,
+        check_fn=handlers.check_assistant_v0_available,
+        requires_env=[],
         description=spec.description,
     )

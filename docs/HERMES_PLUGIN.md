@@ -24,13 +24,19 @@ python -m pip install -c constraints-ci.txt -e ".[test]"
 The current Hermes CLI discovers pip entry-point plugins at runtime, but
 `hermes plugins enable` only enables directory-managed plugins. For a local
 profile, enable this entry-point plugin by adding `polymarket-executor` to the
-profile's `plugins.enabled` allow-list. A local profile can then be checked
-from the integration repository root:
+profile's `plugins.enabled` allow-list. From an adapter checkout, delegate the
+profile check to an explicit integration repository:
+
+```bash
+python scripts/check_hermes_profile_plugin.py --suite-root /path/to/polymarket-execution-suite --profile-cmd "$HERMES_PROFILE_CMD"
+"$HERMES_PROFILE_CMD" tools list --platform cli
+```
+
+From the integration repository itself, run its script directly:
 
 ```bash
 cd /path/to/polymarket-execution-suite
 python scripts/check_hermes_profile_plugin.py --profile-cmd "$HERMES_PROFILE_CMD"
-"$HERMES_PROFILE_CMD" tools list --platform cli
 ```
 
 Set runtime configuration:
@@ -120,8 +126,7 @@ PYTHONPATH=src python -m compileall -q src tests
 Hermes runtime validation before suite release:
 
 ```bash
-cd /path/to/polymarket-execution-suite
-python scripts/check_hermes_profile_plugin.py --profile-cmd "$HERMES_PROFILE_CMD"
+python scripts/check_hermes_profile_plugin.py --suite-root /path/to/polymarket-execution-suite --profile-cmd "$HERMES_PROFILE_CMD"
 "$HERMES_PROFILE_CMD" tools list --platform cli
 ```
 

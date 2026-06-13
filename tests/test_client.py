@@ -281,6 +281,23 @@ def test_submit_plan_rejects_live_mode():
     client.close()
 
 
+def test_submit_plan_rejects_non_dry_run_receipt_status(monkeypatch):
+    def fake_post(self, url, json, headers):
+        return httpx.Response(202, request=httpx.Request("POST", url), json={
+            "execution_id": json["execution_id"],
+            "receipt_id": "receipt-1",
+            "status": "POSTED",
+            "executor_version": "0.28.0",
+            "contract_version": "1.0.0-draft",
+        })
+
+    monkeypatch.setattr(httpx.Client, "post", fake_post)
+    client = ExecutorClient(ExecutorConfig(base_url="http://executor", service_token="svc"))
+    with pytest.raises(ValueError, match="blocked or rejected dry-run receipts"):
+        client.submit_plan("exec-1", "a" * 64, "idem-1")
+    client.close()
+
+
 def test_executor_config_from_env_requires_service_url(monkeypatch):
     monkeypatch.delenv("PM_EXEC_SERVICE_URL", raising=False)
     monkeypatch.setenv("PM_EXEC_SERVICE_TOKEN", "svc")
