@@ -14,9 +14,9 @@
 ## Remaining risks
 
 - Client is still handwritten. Static parity checks reduce drift but do not eliminate it.
-- Adapter CI pins an execution-engine commit for OpenAPI parity; the integration
-  repository remains responsible for proving parity for its selected submodule
-  pair.
+- Adapter CI validates the committed executor OpenAPI snapshot for standalone
+  runs; the integration repository remains responsible for proving parity for
+  its selected submodule pair.
 - Runtime HTTP behavior depends on Rust executor tests and current evidence from
   the pinned execution-engine submodule.
 - Plugin tests use local fake contexts. A local Hermes profile now also

@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - ".github/**"
+      - "contracts/**"
       - "docs/**"
       - "src/**"
       - "tests/**"
@@ -15,6 +16,7 @@ on:
   pull_request:
     paths:
       - ".github/**"
+      - "contracts/**"
       - "docs/**"
       - "src/**"
       - "tests/**"
@@ -44,13 +46,6 @@ jobs:
           ref: 729a778af0b3f984b4934361cad3050f6afb79ba
           path: hermes-agent
 
-      - name: Checkout pinned execution-engine contract
-        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
-        with:
-          repository: ray-toaru/polymarket-execution-engine
-          ref: b1652c8e3138d75949b2db4ddd04fa2d960727e5
-          path: execution-engine-contract
-
       - name: Install Python
         uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
         with:
@@ -71,7 +66,7 @@ jobs:
       - name: Validate pinned executor OpenAPI parity
         env:
           PYTHONPATH: src
-        run: python scripts/check_openapi_parity.py execution-engine-contract/openapi/executor.v1.yaml
+        run: python scripts/check_openapi_parity.py contracts/executor.v1.yaml
 
       - name: Lint sources
         run: python -m ruff check src tests

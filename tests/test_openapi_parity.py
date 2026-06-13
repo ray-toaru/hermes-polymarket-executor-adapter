@@ -31,3 +31,9 @@ def test_current_executor_openapi_has_model_parity():
     if not openapi.is_file():
         return
     assert module.parity_failures(module.load_spec(openapi)) == []
+
+
+def test_committed_executor_openapi_snapshot_has_model_parity():
+    module = load_script()
+    openapi = Path(__file__).resolve().parents[1] / "contracts" / "executor.v1.yaml"
+    assert module.parity_failures(module.load_spec(openapi)) == []
