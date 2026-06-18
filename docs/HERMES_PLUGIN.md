@@ -70,6 +70,7 @@ Admin tools use the `polymarket_executor_admin` toolset:
 - `polymarket_admin_cancel_order`
 - `polymarket_admin_reconcile`
 - `polymarket_admin_list_audit_events`
+- `polymarket_admin_list_live_read_events`
 
 Admin tools require both service and admin API tokens. Mutating admin tools also
 require a human-readable `reason`.

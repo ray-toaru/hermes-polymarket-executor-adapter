@@ -20,6 +20,8 @@ governance, signing, direct CLOB access, or executor database credentials.
   Polymarket operations.
 - Hermes plugin entry point is present at `polymarket-executor`.
 - Native Hermes service/admin toolsets are implemented with token gating.
+- Admin readback includes audit-event and live-read event queries through the
+  executor API only.
 
 ## Stage Roadmap
 
@@ -30,7 +32,8 @@ Status: implemented.
 - Service tools: health, normalize intent, capture snapshot, evaluate decision,
   compile plan, safe prepare execution plan, get submission, list lifecycle
   events, and canary report.
-- Admin tools: kill switch, cancel order, reconcile, and list audit events.
+- Admin tools: kill switch, cancel order, reconcile, list audit events, and
+  list live-read events.
 - Forbidden surface remains excluded: signing, direct CLOB access, executor DB
   writes, reusable signed material, and release/canary governance ownership.
 

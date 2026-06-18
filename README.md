@@ -16,7 +16,8 @@ own executor risk policy.
 - Pydantic models aligned with OpenAPI public schemas.
 - Canonical decimal validation aligned with executor source.
 - Service/admin token client separation.
-- Admin helpers for kill switch, cancel, and reconcile.
+- Admin helpers for kill switch, cancel, reconcile, audit-event queries, and
+  live-read event queries.
 - Safe canary report helpers that do not authorize live trading.
 - Hermes plugin entry point exposes a native `polymarket_executor` toolset and
   a separate `polymarket_executor_admin` toolset.
