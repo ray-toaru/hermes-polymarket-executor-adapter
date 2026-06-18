@@ -17,6 +17,7 @@ from .models import (
     FeasibilitySnapshot,
     HealthReport,
     KillSwitchReceipt,
+    LiveReadEventRecord,
     NormalizedIntent,
     ReconcileOrderLocalResponse,
     ReconcileReport,
@@ -338,6 +339,32 @@ class ExecutorClient:
             correlation_id=correlation_id,
         )
         return [AdminAuditEvent.model_validate(item) for item in payload]
+
+    def list_live_read_events(
+        self,
+        *,
+        limit: int | None = None,
+        before_event_id: int | None = None,
+        account_id: str | None = None,
+        operation: str | None = None,
+        outcome: str | None = None,
+        remote_order_id: str | None = None,
+        correlation_id: str | None = None,
+    ) -> list[LiveReadEventRecord]:
+        payload = self._get(
+            "/v1/admin/live-read-events",
+            admin=True,
+            params=self._query_params(
+                limit=limit,
+                before_event_id=before_event_id,
+                account_id=account_id,
+                operation=operation,
+                outcome=outcome,
+                remote_order_id=remote_order_id,
+            ),
+            correlation_id=correlation_id,
+        )
+        return [LiveReadEventRecord.model_validate(item) for item in payload]
 
     def verify_admin_session(
         self,

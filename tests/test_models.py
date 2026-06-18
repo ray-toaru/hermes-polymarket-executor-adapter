@@ -12,6 +12,7 @@ from hermes_polymarket_executor_adapter.models import (
     CanaryReadinessReport,
     ExecutionPlanSummary,
     ExecutionLifecycleEvent,
+    LiveReadEventRecord,
     MarketRef,
     NormalizedIntent,
     QuantityBound,
@@ -346,6 +347,40 @@ def test_execution_lifecycle_payload_requires_redacted_envelope():
             correlation_id=None,
             redacted_fields=[],
             body={"private_key": "secret"},
+        )
+
+
+def test_live_read_event_requires_read_only_redacted_boundary():
+    event = LiveReadEventRecord(
+        event_id=1,
+        observed_at="2026-05-16T00:00:00Z",
+        account_id="acct",
+        operation="GET_ORDER",
+        outcome="OBSERVED",
+        remote_order_id="order-1",
+        remote_state="OPEN",
+        no_trading_side_effect=True,
+        redacted_fields=["api_secret", "signature", "signed_payload"],
+    )
+    assert event.no_trading_side_effect is True
+    assert event.redacted_fields == ["api_secret", "signature", "signed_payload"]
+
+    with pytest.raises(ValidationError):
+        LiveReadEventRecord(
+            account_id="acct",
+            operation="GET_ORDER",
+            outcome="GatewayError",
+            no_trading_side_effect=False,
+            redacted_fields=["api_secret"],
+        )
+    with pytest.raises(ValidationError):
+        LiveReadEventRecord(
+            account_id="acct",
+            operation="GET_ORDER",
+            outcome="GatewayError",
+            no_trading_side_effect=True,
+            redacted_fields=["api_secret"],
+            redacted_error_summary="api_secret=leaked",
         )
     with pytest.raises(ValidationError):
         ExecutionLifecycleEvent(

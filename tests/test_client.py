@@ -470,6 +470,20 @@ def test_v023_lifecycle_and_audit_client_methods(monkeypatch):
                 "correlation_id": "corr-admin",
                 "result": "ACCEPTED state=ReconcileRequired",
             }])
+        if url.endswith("/v1/admin/live-read-events"):
+            return httpx.Response(200, request=httpx.Request("GET", url), json=[{
+                "event_id": 11,
+                "observed_at": "2026-05-16T00:00:03Z",
+                "account_id": "acct",
+                "operation": "GET_ORDER",
+                "outcome": "OBSERVED",
+                "remote_order_id": "order-1",
+                "remote_state": "OPEN",
+                "error_category": None,
+                "redacted_error_summary": None,
+                "no_trading_side_effect": True,
+                "redacted_fields": ["api_secret", "signature", "signed_payload"],
+            }])
         if "/v1/lifecycle/executions/" in url:
             return httpx.Response(200, request=httpx.Request("GET", url), json=[{
                 "event_id": 4,
@@ -535,6 +549,14 @@ def test_v023_lifecycle_and_audit_client_methods(monkeypatch):
         audit_correlation_id="corr-admin",
         correlation_id="corr-admin-request",
     )
+    live_read = client.list_live_read_events(
+        limit=3,
+        operation="GET_ORDER",
+        outcome="OBSERVED",
+        account_id="acct",
+        remote_order_id="order-1",
+        correlation_id="corr-live-read",
+    )
 
     assert recorded.event_id == 7
     assert construction.lifecycle_records[0].state == "SIGNED_DRY_RUN"
@@ -543,11 +565,22 @@ def test_v023_lifecycle_and_audit_client_methods(monkeypatch):
     assert lifecycle[0].payload.body["no_remote_side_effect"] is True
     assert audit[0].operation == "CancelOrder"
     assert audit[0].correlation_id == "corr-admin"
+    assert live_read[0].operation == "GET_ORDER"
+    assert live_read[0].no_trading_side_effect is True
     assert captured[0][3]["X-Correlation-Id"] == "corr-1"
+    assert captured[-2][3]["Authorization"] == "Bearer admin"
+    assert captured[-2][3]["X-Correlation-Id"] == "corr-admin-request"
+    assert captured[-2][4]["correlation_id"] == "corr-admin"
+    assert captured[-2][4]["principal_subject"] == "admin-token"
     assert captured[-1][3]["Authorization"] == "Bearer admin"
-    assert captured[-1][3]["X-Correlation-Id"] == "corr-admin-request"
-    assert captured[-1][4]["correlation_id"] == "corr-admin"
-    assert captured[-1][4]["principal_subject"] == "admin-token"
+    assert captured[-1][3]["X-Correlation-Id"] == "corr-live-read"
+    assert captured[-1][4] == {
+        "limit": 3,
+        "operation": "GET_ORDER",
+        "outcome": "OBSERVED",
+        "account_id": "acct",
+        "remote_order_id": "order-1",
+    }
     assert captured[1][1].endswith("/v1/sign-only/standard-constructions")
     assert captured[1][3]["X-Correlation-Id"] == "corr-std"
     assert captured[2][4] == {"limit": 10, "before_event_id": 9}

@@ -582,6 +582,49 @@ class AdminAuditEvent(FrozenModel):
     result: str
 
 
+LiveReadOperation = Literal["GET_ORDER", "LIST_OPEN_ORDERS", "LIST_FILLS", "LIST_POSITIONS"]
+LiveReadOutcome = Literal[
+    "OBSERVED",
+    "MISSING",
+    "BLOCKED",
+    "REMOTE_REJECTED",
+    "REMOTE_UNKNOWN",
+    "AUTHENTICATION_FAILED",
+]
+LiveReadErrorCategory = Literal[
+    "REMOTE_REJECTED",
+    "REMOTE_UNKNOWN",
+    "AUTHENTICATION_FAILED",
+    "DISABLED",
+    "SIGNING_UNAVAILABLE",
+]
+
+
+class LiveReadEventRecord(FrozenModel):
+    event_id: int | None = None
+    observed_at: datetime | None = None
+    account_id: str
+    operation: LiveReadOperation
+    outcome: LiveReadOutcome
+    remote_order_id: str | None = None
+    remote_state: str | None = None
+    error_category: LiveReadErrorCategory | None = None
+    redacted_error_summary: str | None = None
+    no_trading_side_effect: bool
+    redacted_fields: list[str]
+
+    @model_validator(mode="after")
+    def must_be_read_only_and_redacted(self) -> "LiveReadEventRecord":
+        if not self.no_trading_side_effect:
+            raise ValueError("live-read event must not have trading side effects")
+        if not self.redacted_fields:
+            raise ValueError("live-read event must declare redacted_fields")
+        if self.redacted_error_summary is not None:
+            if _contains_secret_bearing_values(self.redacted_error_summary):
+                raise ValueError("redacted_error_summary must not contain secret-bearing values")
+        return self
+
+
 AdminCapability = Literal[
     "READ_AUDIT",
     "CANCEL_ORDER",

@@ -105,6 +105,13 @@ def register(ctx) -> None:
         handlers.handle_admin_list_audit_events,
         "List executor admin audit events.",
     )
+    _register_admin_tool(
+        ctx,
+        "polymarket_admin_list_live_read_events",
+        schemas.ADMIN_LIST_LIVE_READ_EVENTS_SCHEMA,
+        handlers.handle_admin_list_live_read_events,
+        "List read-only executor live-read events.",
+    )
 
 
 def _register_service_tool(ctx, name: str, schema: dict, handler, description: str) -> None:

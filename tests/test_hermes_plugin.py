@@ -96,6 +96,7 @@ def test_registers_service_and_admin_tools():
         "polymarket_admin_cancel_order",
         "polymarket_admin_reconcile",
         "polymarket_admin_list_audit_events",
+        "polymarket_admin_list_live_read_events",
     }
     actual_executor = {
         name
@@ -435,6 +436,93 @@ def test_admin_cancel_handler_requires_reason_and_uses_client(monkeypatch):
         "expected_subject": "admin-subject",
         "required_capabilities": {"CANCEL_ORDER"},
         "verify_correlation_id": "corr-1",
+    }
+
+
+def test_admin_live_read_handler_uses_read_audit_and_filters(monkeypatch):
+    from hermes_polymarket_executor_adapter import hermes_handlers
+    from hermes_polymarket_executor_adapter.models import LiveReadEventRecord
+
+    captured = {}
+
+    class FakeClient:
+        def __init__(self, config):
+            self.config = config
+
+        def list_live_read_events(
+            self,
+            *,
+            limit=None,
+            before_event_id=None,
+            account_id=None,
+            operation=None,
+            outcome=None,
+            remote_order_id=None,
+            correlation_id=None,
+        ):
+            captured.update(
+                limit=limit,
+                before_event_id=before_event_id,
+                account_id=account_id,
+                operation=operation,
+                outcome=outcome,
+                remote_order_id=remote_order_id,
+                correlation_id=correlation_id,
+            )
+            return [
+                LiveReadEventRecord(
+                    event_id=11,
+                    account_id="acct",
+                    operation="GET_ORDER",
+                    outcome="OBSERVED",
+                    remote_order_id="order-1",
+                    remote_state="OPEN",
+                    no_trading_side_effect=True,
+                    redacted_fields=["credential"],
+                )
+            ]
+
+        def verify_admin_session(self, *, expected_subject, required_capabilities, correlation_id=None):
+            captured.update(
+                expected_subject=expected_subject,
+                required_capabilities=required_capabilities,
+                verify_correlation_id=correlation_id,
+            )
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(hermes_handlers.ExecutorConfig, "from_env", classmethod(lambda cls: "cfg"))
+    monkeypatch.setattr(hermes_handlers, "ExecutorClient", FakeClient)
+    monkeypatch.setenv("PM_EXEC_ADMIN_SUBJECT", "admin-subject")
+
+    payload = json.loads(
+        hermes_handlers.handle_admin_list_live_read_events(
+            {
+                "limit": 5,
+                "before_event_id": 12,
+                "account_id": "acct",
+                "operation": "GET_ORDER",
+                "outcome": "OBSERVED",
+                "remote_order_id": "order-1",
+                "correlation_id": "corr-live-read",
+            }
+        )
+    )
+
+    assert payload[0]["operation"] == "GET_ORDER"
+    assert payload[0]["no_trading_side_effect"] is True
+    assert captured == {
+        "expected_subject": "admin-subject",
+        "required_capabilities": {"READ_AUDIT"},
+        "verify_correlation_id": "corr-live-read",
+        "limit": 5,
+        "before_event_id": 12,
+        "account_id": "acct",
+        "operation": "GET_ORDER",
+        "outcome": "OBSERVED",
+        "remote_order_id": "order-1",
+        "correlation_id": "corr-live-read",
     }
 
 

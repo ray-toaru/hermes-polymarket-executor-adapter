@@ -192,3 +192,29 @@ ADMIN_LIST_AUDIT_EVENTS_SCHEMA = _object_schema(
         "correlation_id": CORRELATION_ID,
     },
 )
+
+ADMIN_LIST_LIVE_READ_EVENTS_SCHEMA = _object_schema(
+    "List read-only normalized live-read events with optional filters.",
+    {
+        "limit": {"type": "integer", "minimum": 1},
+        "before_event_id": {"type": "integer", "minimum": 1},
+        "account_id": {"type": "string"},
+        "operation": {
+            "type": "string",
+            "enum": ["GET_ORDER", "LIST_OPEN_ORDERS", "LIST_FILLS", "LIST_POSITIONS"],
+        },
+        "outcome": {
+            "type": "string",
+            "enum": [
+                "OBSERVED",
+                "MISSING",
+                "BLOCKED",
+                "REMOTE_REJECTED",
+                "REMOTE_UNKNOWN",
+                "AUTHENTICATION_FAILED",
+            ],
+        },
+        "remote_order_id": {"type": "string"},
+        "correlation_id": CORRELATION_ID,
+    },
+)

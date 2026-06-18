@@ -45,9 +45,20 @@ def _is_absolute_http_url(value: str | None) -> bool:
 
 
 def _result(payload: Any) -> str:
-    if hasattr(payload, "model_dump"):
-        payload = payload.model_dump(mode="json")
+    payload = _jsonable(payload)
     return json.dumps(payload, ensure_ascii=False, sort_keys=True)
+
+
+def _jsonable(payload: Any) -> Any:
+    if hasattr(payload, "model_dump"):
+        return payload.model_dump(mode="json")
+    if isinstance(payload, list):
+        return [_jsonable(item) for item in payload]
+    if isinstance(payload, tuple):
+        return [_jsonable(item) for item in payload]
+    if isinstance(payload, dict):
+        return {key: _jsonable(value) for key, value in payload.items()}
+    return payload
 
 
 def _error(message: str, *, code: str | None = None) -> str:
@@ -301,6 +312,25 @@ def handle_admin_list_audit_events(args: dict, **_kwargs) -> str:
                 principal_subject=args.get("principal_subject"),
                 result=args.get("result"),
                 audit_correlation_id=args.get("audit_correlation_id"),
+                correlation_id=args.get("correlation_id"),
+            ),
+        )
+    )
+
+
+def handle_admin_list_live_read_events(args: dict, **_kwargs) -> str:
+    return _with_client(
+        lambda client: _verified_admin_call(
+            client,
+            {"READ_AUDIT"},
+            args.get("correlation_id"),
+            lambda: client.list_live_read_events(
+                limit=args.get("limit"),
+                before_event_id=args.get("before_event_id"),
+                account_id=args.get("account_id"),
+                operation=args.get("operation"),
+                outcome=args.get("outcome"),
+                remote_order_id=args.get("remote_order_id"),
                 correlation_id=args.get("correlation_id"),
             ),
         )
