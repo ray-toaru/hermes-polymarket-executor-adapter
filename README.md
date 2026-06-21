@@ -58,6 +58,9 @@ export PM_EXEC_ADMIN_TOKEN=...  # only required for admin tools
 
 `PM_EXEC_SERVICE_URL` is required. The adapter will not silently default to a
 local executor host.
+These are adapter client credentials: set `PM_EXEC_SERVICE_TOKEN` to the target
+engine API's `PMX_API_SERVICE_TOKEN` value, and set `PM_EXEC_ADMIN_TOKEN` to the
+target engine API's `PMX_API_ADMIN_TOKEN` value.
 
 Service tools are registered under `polymarket_executor`; admin tools are
 registered under `polymarket_executor_admin` and require both service and admin

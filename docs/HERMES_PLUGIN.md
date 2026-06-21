@@ -49,6 +49,9 @@ export PM_EXEC_ADMIN_TOKEN=...  # admin tools only
 
 `PM_EXEC_SERVICE_URL` is required. The adapter does not silently default to a
 local executor URL.
+These are adapter client credentials: set `PM_EXEC_SERVICE_TOKEN` to the target
+engine API's `PMX_API_SERVICE_TOKEN` value, and set `PM_EXEC_ADMIN_TOKEN` to the
+target engine API's `PMX_API_ADMIN_TOKEN` value.
 
 ## Toolsets
 
