@@ -1,7 +1,7 @@
 # Resolved Python CI constraints for reproducible Hermes checks.
 annotated-types==0.7.0
 anyio==4.14.1
-certifi==2026.5.20
+certifi==2026.6.17
 build==1.5.0
 bandit==1.9.4
 httpcore==1.0.9
