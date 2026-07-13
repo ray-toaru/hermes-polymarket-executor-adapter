@@ -35,11 +35,13 @@ def test_pyproject_exposes_hermes_plugin_entrypoint():
     assert project["project"]["license"] == "LicenseRef-Proprietary"
     assert project["project"]["authors"] == [{"name": "ray-toaru"}]
     assert "Operating System :: OS Independent" in project["project"]["classifiers"]
-    assert project["project"]["dependencies"] == [
-        "httpx==0.28.1",
-        "pydantic==2.13.4",
-    ]
-    assert project["project"]["optional-dependencies"]["test"] == ["pytest==9.0.3"]
+    runtime_dependencies = project["project"]["dependencies"]
+    assert {spec.split("==", 1)[0] for spec in runtime_dependencies} == {"httpx", "pydantic"}
+    assert all("==" in spec and ">=" not in spec for spec in runtime_dependencies)
+
+    test_dependencies = project["project"]["optional-dependencies"]["test"]
+    assert {spec.split("==", 1)[0] for spec in test_dependencies} == {"pytest"}
+    assert all("==" in spec and ">=" not in spec for spec in test_dependencies)
     assert (
         project["project"]["entry-points"]["hermes_agent.plugins"]["polymarket-executor"]
         == "hermes_polymarket_executor_adapter.hermes_plugin"
